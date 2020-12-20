@@ -1,0 +1,920 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<thing:thing-descriptions bindingId="stiebelheatpump"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:thing="http://eclipse.org/smarthome/schemas/thing-description/v1.0.0"
+	xsi:schemaLocation="http://eclipse.org/smarthome/schemas/thing-description/v1.0.0 http://eclipse.org/smarthome/schemas/thing-description-1.0.0.xsd">
+
+	<channel-group-type id="channelGroupTypeVersion">
+		<label>Version</label>
+		<description>Version information of heat pump firmware</description>
+		<channels>
+			<!-- at least 1 channel-group with id = version must be included -->
+			<channel id="version" typeId="version" />
+			<channel id="dumpResponse" typeId="dumpResponse" />
+			<channel id="requestBytes" typeId="requestBytes"/>
+            <channel id="respondBytes" typeId="respondBytes"/>
+		</channels>
+	</channel-group-type>
+	<channel-group-type id="channelGroupTypeTime">
+		<label>Time</label>
+		<description>Date and time information of heat pump</description>
+		<channels>
+			<channel id="setTime" typeId="setTime" />
+			<channel id="weekday" typeId="weekday" />
+			<channel id="hours" typeId="hours" />
+			<channel id="minutes" typeId="minutes" />
+			<channel id="seconds" typeId="seconds" />
+			<channel id="year" typeId="year" />
+			<channel id="month" typeId="month" />
+			<channel id="day" typeId="day" />
+		</channels>
+	</channel-group-type>
+	<channel-group-type id="channelGroupTypeCurrentValues">
+		<label>Measurements</label>
+		<description>Measurements of the heat pump.</description>
+		<channels>
+		  <channel id="refreshTime" typeId="dateTime" />  
+  			<channel id="collectorTemperature" typeId="temperature">
+				<label>Collector temperature</label>
+				<description>Collector temperature</description>
+			</channel>
+			<channel id="outsideTemperature" typeId="temperature">
+				<label>Outside temperature</label>
+				<description>Outside temperature</description>
+			</channel>
+			<channel id="flowTemperature" typeId="temperature">
+				<label>Flow temperature</label>
+				<description>Flow temperature</description>
+			</channel>
+			<channel id="returnTemperature" typeId="temperature">
+				<label>Return temperature</label>
+				<description>Return temperature</description>
+			</channel>
+			<channel id="hotGasTemperature" typeId="temperature">
+				<label>Hot gas temperature</label>
+				<description>Hot gas temperature</description>
+			</channel>
+			<channel id="dHWTemperature" typeId="temperature">
+				<label>Cylinder temperature</label>
+				<description>Cylinder temperature</description>
+			</channel>
+			<channel id="flowHC2Temperature" typeId="temperature">
+				<label>Flow temperature HC2</label>
+				<description>Flow temperature HC2</description>
+			</channel>
+			<channel id="insideTemperature" typeId="temperature">
+				<label>Inside temperature</label>
+				<description>Inside temperature</description>
+			</channel>
+			<channel id="evaporatorTemperature" typeId="temperature">
+				<label>Evaporator temperature</label>
+				<description>Evaporator temperature</description>
+			</channel>
+			<channel id="condenserTemperature" typeId="temperature">
+				<label>Condenser temperature</label>
+				<description>Condenser temperature</description>
+			</channel>
+			<channel id="extractFanSpeed" typeId="speed">
+				<label>Extract fan speed</label>
+				<description>Extract fan speed</description>
+			</channel>
+			<channel id="supplyFanSpeed" typeId="speed">
+				<label>Supply fan speed</label>
+				<description>Supply fan speed</description>
+			</channel>
+			<channel id="exhaustFanSpeed" typeId="speed">
+				<label>Exhaust fan speed</label>
+				<description>Exhaust fan speed</description>
+			</channel>
+			<channel id="filteredOutsideTemperature" typeId="temperature">
+				<label>Filtered outside temperature</label>
+				<description>Filtered outside temperature</description>
+			</channel>
+			<channel id="dHWPumpStatus" typeId="contactStatus">
+				<label>DHW pump status</label>
+				<description>DHW pump status</description>
+			</channel>
+			<channel id="heatingCircuitPumpStatus" typeId="contactStatus">
+				<label>Heating Circuit pump status</label>
+				<description>Heating Circuit pump status</description>
+			</channel>
+			<channel id="solarPumpStatus" typeId="contactStatus">
+				<label>Solar pump status</label>
+				<description>Solar pump status</description>
+			</channel>
+			<channel id="mixerOpen" typeId="contactStatus">
+				<label>Mixer Open status</label>
+				<description>Mixer Open status</description>
+			</channel>
+			<channel id="mixerClose" typeId="contactStatus">
+				<label>Mixer Close status</label>
+				<description>Mixer Close status</description>
+			</channel>
+			<channel id="heatPipeValve" typeId="contactStatus">
+				<label>Heat Pipe Valve status</label>
+				<description>Heat Pipe Valve status</description>
+			</channel>
+			<channel id="DiverterValve" typeId="contactStatus">
+				<label>Diverter Valve status</label>
+				<description>Diverter Valve status</description>
+			</channel>
+			<channel id="CompressorStatus" typeId="contactStatus">
+				<label>Compressor status</label>
+				<description>Compressor status</description>
+			</channel>
+			<channel id="BoosterStage3" typeId="contactStatus">
+				<label>BoosterStage 3</label>
+				<description>BoosterStage 3</description>
+			</channel>
+			<channel id="BoosterStage2" typeId="contactStatus">
+				<label>BoosterStage 2</label>
+				<description>BoosterStage 2</description>
+			</channel>
+			<channel id="BoosterStage1" typeId="contactStatus">
+				<label>BoosterStage 1</label>
+				<description>BoosterStage 1</description>
+			</channel>
+		</channels>
+	</channel-group-type>
+	<channel-group-type id="channelGroupTypeOperationCounters">
+		<label>Operation Counters</label>
+		<description>Reads Operation counters of the heat pump.</description>
+		<channels>
+			<channel id="compressorA" typeId="hourCounter">
+				<label>Operation counter compressor A</label>
+				<description>Operation counter compressor A</description>
+			</channel>
+			<channel id="compressorB" typeId="hourCounter">
+				<label>Operation counter compressor B</label>
+				<description>Operation counter compressor B</description>
+			</channel>
+			<channel id="heatingMode" typeId="hourCounter">
+				<label>Operation counter heating mode</label>
+				<description>Operation counter heating mode</description>
+			</channel>
+			<channel id="heatingBoosterMode" typeId="hourCounter">
+				<label>Operation counter heating booster mode</label>
+				<description>Operation counter heating booster mode</description>
+			</channel>
+			<channel id="DHWMode" typeId="hourCounter">
+				<label>Operation counter DHW mode</label>
+				<description>Operation counter DHW mode</description>
+			</channel>
+			<channel id="DHWBoosterMode" typeId="hourCounter">
+				<label>Operation counter DHW booster mode</label>
+				<description>Operation counter DHW booster mode</description>
+			</channel>
+			<channel id="coolingMode" typeId="hourCounter">
+				<label>Operation counter cooling mode</label>
+				<description>Operation counter cooling mode</description>
+			</channel>
+			<channel id="compressorStarts" typeId="counter">
+				<label>Compressor starts</label>
+				<description>Compressor starts</description>
+			</channel>
+		</channels>
+	</channel-group-type>
+	<channel-group-type id="channelGroupTypeNominalValues">
+		<label>Settings nominal values</label>
+		<description>Reads settings nominal values of the heat pump.</description>
+		<channels>
+			<channel id="p01RoomTemperatureStandardMode" typeId="temperatureSetting">
+				<label>P01 Room temperature standard</label>
+				<description>P01 Room temperature standard mode setting</description>
+			</channel>
+			<channel id="p02RoomTemperatureSetbackMode" typeId="temperatureSetting">
+				<label>P02 Room temperature set back</label>
+				<description>P02 Room temperature set back mode setting</description>
+			</channel>
+			<channel id="p03RoomTemperatureStandby" typeId="temperatureSetting">
+				<label>P03 Room temperature standby</label>
+				<description>P03 Room temperature standby mode setting</description>
+			</channel>
+			<channel id="p04DHWTemperatureStandardMode" typeId="dHWTemperatureSetting">
+				<label>P04 Domestic hot water temperature standard</label>
+				<description>P04 Domestic hot water standard mode setting</description>
+			</channel>
+			<channel id="p05DHWTemperaturSetbackMode" typeId="dHWTemperatureSetting">
+				<label>P05 Domestic hot water temperature set back</label>
+				<description>P05 Domestic hot water set back mode setting</description>
+			</channel>
+			<channel id="p06DHWTemperatureStandby" typeId="dHWTemperatureSetting">
+				<label>P06 Domestic hot water temperature standby</label>
+				<description>P06 Domestic hot water standby mode setting</description>
+			</channel>
+			<channel id="p07FanStageStandardMode" typeId="fanStageSetting">
+				<label>P07 Fan stage standard</label>
+				<description>P07 Fan stage standard mode setting</description>
+			</channel>
+			<channel id="p08FanStageSetbackMode" typeId="fanStageSetting">
+				<label>P08 Fan stage set back</label>
+				<description>P08 Fan stage set back mode setting</description>
+			</channel>
+			<channel id="p09FanStageStandby" typeId="fanStageSetting">
+				<label>P09 Fan stage standby</label>
+				<description>P09 Fan stage standby mode setting</description>
+			</channel>
+			<channel id="p10HeatingCircuitTemperatureManual" typeId="temperatureManualSetting">
+				<label>P10 Heating circuit temperature manual</label>
+				<description>P10 Heating circuit temperature manual mode setting</description>
+			</channel>
+			<channel id="p11DHWTemperatureManual" typeId="temperatureManualSetting">
+				<label>P11 Domestic hot water temperature manual</label>
+				<description>P11 Domestic hot water manual mode setting</description>
+			</channel>
+			<channel id="p12FanStageManual" typeId="fanStageSetting">
+				<label>P12 Fan stage manual</label>
+				<description>P12 Fan stage manual mode setting</description>
+			</channel>
+		</channels>
+	</channel-group-type>
+	<channel-group-type id="channelGroupTypeVentilation">
+		<label>Settings ventilation</label>
+		<description>Reads ventilation settings of the heat pump.</description>
+		<channels>
+			<channel id="p37FanStageSupplyAir1" typeId="fanStageSettingAir">
+				<label>P37 Fan stage 1 supply air</label>
+				<description>P37 Fan stage 1 supply air setting</description>
+			</channel>
+			<channel id="p38FanStageSupplyAir2" typeId="fanStageSettingAir">
+				<label>P38 Fan stage 2 supply air</label>
+				<description>P38 Fan stage 2 supply air setting</description>
+			</channel>
+			<channel id="p39FanStageSupplyAir3" typeId="fanStageSettingAir">
+				<label>P39 Fan stage 3 supply air</label>
+				<description>P39 Fan stage 3 supply air setting</description>
+			</channel>
+			<channel id="p40FanStageExtractAir1" typeId="fanStageSettingAir">
+				<label>P40 Fan stage 1 extract air</label>
+				<description>P40 Fan stage 1 extract air setting</description>
+			</channel>
+			<channel id="p41FanStageExtractAir2" typeId="fanStageSettingAir">
+				<label>P41 Fan stage 2 extract air</label>
+				<description>P41 Fan stage 2 extract air setting</description>
+			</channel>
+			<channel id="p42FanStageExtractAir3" typeId="fanStageSettingAir">
+				<label>P42 Fan stage 3 extract air</label>
+				<description>P42 Fan stage 3 extract air setting</description>
+			</channel>
+			<channel id="p43VentilationTimeUnscheduledStage3" typeId="ventilationTimeUnscheduled">
+				<label>P43 Unscheduled ventilation time stage 3</label>
+				<description>P43 Unscheduled ventilation time stage 3 setting</description>
+			</channel>
+			<channel id="p44VentilationTimeUnscheduledStage2" typeId="ventilationTimeUnscheduled">
+				<label>P44 Unscheduled ventilation time stage 2</label>
+				<description>P44 Unscheduled ventilation time stage 2 setting</description>
+			</channel>
+			<channel id="p45VentilationTimeUnscheduledStage1" typeId="ventilationTimeUnscheduled">
+				<label>P45 Unscheduled ventilation time stage 1</label>
+				<description>P45 Unscheduled ventilation time stage 1 setting</description>
+			</channel>
+			<channel id="p46VentilationTimeUnscheduledStage0" typeId="ventilationTimeUnscheduled">
+				<label>P46 Unscheduled ventilation time stage 0</label>
+				<description>P46 Unscheduled ventilation time stage 0 setting</description>
+			</channel>
+			<channel id="p75OperatingModePassiveCooling" typeId="operatingModePassiveCooling">
+				<label>P75 Operating mode passive cooling</label>
+				<description>P75 Operating mode passive cooling setting</description>
+			</channel>
+			<channel id="stoveFireplaceOperation" typeId="stoveFireplaceOperation">
+				<label>Stove fireplace operation</label>
+				<description>Stove fireplace operation</description>
+			</channel>
+		</channels>
+	</channel-group-type>
+	<channel-group-type id="channelGroupTypeHeating">
+		<label>Settings heating</label>
+		<description>Reads heating settings of the heat pump.</description>
+		<channels>
+			<channel id="p13IncreaseHeatingHC1" typeId="increaseHeating">
+				<label>P13 Increase heating HC1</label>
+				<description>P13 Increase heating HC1 setting</description>
+			</channel>
+			<channel id="p14LowEndPointHeatingHC1" typeId="lowEndPointHeating">
+				<label>P14 Low end point heating HC1</label>
+				<description>P14 Low end point heating HC1 setting</description>
+			</channel>
+			<channel id="p15RoomInfluenceHeatingHC1" typeId="roomInfluenceHeating">
+				<label>P15 Room influence heating HC1</label>
+				<description>P15 Room influence heating HC1 setting</description>
+			</channel>
+			<channel id="p16IncreaseHeatingHC2" typeId="increaseHeating">
+				<label>P16 Increase heating HC2</label>
+				<description>P16 Increase heating HC2 setting</description>
+			</channel>
+			<channel id="p17LowEndPointHeatingHC2" typeId="lowEndPointHeating">
+				<label>P17 Low end point heating HC2</label>
+				<description>P17 Low end point heating HC2 setting</description>
+			</channel>
+			<channel id="p18RoomInfluenceHeatingHC2" typeId="roomInfluenceHeating">
+				<label>P18 Room influence heating HC2</label>
+				<description>P18 Room influence heating HC2 setting</description>
+			</channel>
+			<channel id="p19TemperatureCaptureReturnFlowHC1" typeId="temperatureCaptureReturnFlow">
+				<label>P19 Temperature capture return flow HC1</label>
+				<description>P19 Temperature capture return flow HC1 setting</description>
+			</channel>
+			<channel id="p20TemperatureCaptureReturnFlowHC2" typeId="temperatureCaptureReturnFlow">
+				<label>P20 Temperature capture return flow HC2</label>
+				<description>P20 Temperature capture return flow HC2 setting</description>
+			</channel>
+			<channel id="maxSetHeatingCircuitTemperatureHC1" typeId="maxSetHeatingCircuitTemperature">
+				<label>Max Set heating circuit temperature HC1</label>
+				<description>Max Set heating circuit temperature HC1 setting</description>
+			</channel>
+			<channel id="minSetHeatingCircuitTemperatureHC1" typeId="minSetHeatingCircuitTemperature">
+				<label>Min Set heating circuit temperature HC1</label>
+				<description>Min Set heating circuit temperature HC1 setting</description>
+			</channel>
+			<channel id="maxSetHeatingCircuitTemperatureHC2" typeId="maxSetHeatingCircuitTemperature">
+				<label>Max Set heating circuit temperature HC2</label>
+				<description>Max Set heating circuit temperature HC2 setting</description>
+			</channel>
+			<channel id="minSetHeatingCircuitTemperatureHC2" typeId="minSetHeatingCircuitTemperature">
+				<label>Min Set heating circuit temperature HC2</label>
+				<description>Min Set heating circuit temperature HC2 setting</description>
+			</channel>
+			<channel id="p21HysteresisHeating1" typeId="hysteresisHeatingWide">
+				<label>P21 Hysteresis heating stage 1</label>
+				<description>P21 Hysteresis heating stage 1 setting</description>
+			</channel>
+			<channel id="p22HysteresisHeating2" typeId="hysteresisHeatingWide">
+				<label>P22 Hysteresis heating stage 2</label>
+				<description>P22 Hysteresis heating stage 2 setting</description>
+			</channel>
+			<channel id="p23HysteresisHeating3" typeId="hysteresisHeatingNarrow">
+				<label>P23 Hysteresis heating stage 3</label>
+				<description>P23 Hysteresis heating stage 3 setting</description>
+			</channel>
+			<channel id="p24HysteresisHeating4" typeId="hysteresisHeatingNarrow">
+				<label>P24 Hysteresis heating stage 4</label>
+				<description>P24 Hysteresis heating stage 4 setting</description>
+			</channel>
+			<channel id="p25HysteresisHeating5" typeId="hysteresisHeatingNarrow">
+				<label>P25 Hysteresis heating stage 5</label>
+				<description>P25 Hysteresis heating stage 5 setting</description>
+			</channel>
+			<channel id="p26HysteresisHeating6" typeId="hysteresisHeatingNarrow">
+				<label>P26 Hysteresis heating stage 6</label>
+				<description>P25 Hysteresis heating stage 6 setting</description>
+			</channel>
+			<channel id="p27HysteresisHeating7" typeId="hysteresisHeatingNarrow">
+				<label>P27 Hysteresis heating stage 7</label>
+				<description>P27 Hysteresis heating stage 7 setting</description>
+			</channel>
+			<channel id="p28HysteresisHeating8" typeId="hysteresisHeatingNarrow">
+				<label>P28 Hysteresis heating stage 8</label>
+				<description>P28 Hysteresis heating stage 8 setting</description>
+			</channel>
+			<channel id="p29SwitchingHysteresisAsymmetry" typeId="hysteresisHeatingSwitching">
+				<label>P29 Switching hysteresis asymmetry</label>
+				<description>P29 Switching hysteresis asymmetry setting</description>
+			</channel>
+			<channel id="p30SwitchingValueIntegralPortionHeating" typeId="switchingValueIntegralPortionHeating">
+				<label>P30 Switching value integral portion heating</label>
+				<description>P30 Switching value integral portion heating setting</description>
+			</channel>
+			<channel id="p31AmountOfUnlockedElectricalBoosterStages" typeId="fanStageSetting">
+				<label>P31 Amount of unlocked electrical booster stages</label>
+				<description>P31 Amount of unlocked electrical booster stages setting</description>
+				>
+			</channel>
+			<channel id="maxFlowTemperatureHeatingMode" typeId="maxFlowTemperatureSetting">
+				<label>Maximum flow temperature heating mode</label>
+				<description>Maximum flow temperature heating mode setting</description>
+			</channel>
+			<channel id="p49ChangeoverTemperatureSummerWinter" typeId="changeoverTemperatureSummerWinter">
+				<label>P49 Change over temperature Summer Winter</label>
+				<description>P49 Change over temperature Summer Winter setting</description>
+			</channel>
+			<channel id="p50HysteresisChangeoverTemperatureSummerWinter"
+				typeId="hysteresisChangeoverTemperatureSummerWinter">
+				<label>P50 Hysteresis change over temperature Summer Winter</label>
+				<description>P50 Hysteresis change over temperature Summer Winter setting</description>
+			</channel>
+			<channel id="p77OutsideTemperatureAdjustment" typeId="outsideTemperatureAdjustment">
+				<label>P77 Outside temperature adjustment</label>
+				<description>P77 Outside temperature adjustment setting</description>
+			</channel>
+			<channel id="p78BivalencePoint" typeId="bivalencePoint">
+				<label>P78 Bivalence point</label>
+				<description>P78 Bivalence point setting</description>
+			</channel>
+			<channel id="p79DelayedEnableReheating" typeId="delayedEnableReheating">
+				<label>P79 Delayed enable re-heating</label>
+				<description>P79 Delayed enable re-heating setting</description>
+			</channel>
+			<channel id="outputElectricalHeatingStage1" typeId="outputElectricalHeatingStage">
+				<label>Electrical heating stage 1</label>
+				<description>Electrical heating stage 1 in [kW]</description>
+			</channel>
+		</channels>
+	</channel-group-type>
+	<channel-group-type id="channelGroupTypeEvaporator">
+		<label>Settings Evaporator</label>
+		<description>Reads Evaporator settings of the heat pump.</description>
+		<channels>
+			<channel id="upperLimitEvaporatorTemperatureForDefrostEnd" typeId="temperaturLimitEvaporator">
+				<label>Upper limit evaporator temperature for defrost end</label>
+				<description>Upper limit evaporator temperature for defrost end setting</description>
+			</channel>
+			<channel id="maxEvaporatorDefrostTime" typeId="maxEvaporatorDefrostTime">
+				<label>Max evaporator defrost time</label>
+				<description>Max evaporator defrost time setting</description>
+			</channel>
+			<channel id="limitTemperatureCondenserElectricalReheating" typeId="temperaturLimitEvaporator">
+				<label>Max evaporator defrost time</label>
+				<description>Max evaporator defrost time setting</description>
+			</channel>
+			<channel id="limitTemperatureCondenserDefrostTermination" typeId="temperaturLimitCondenser">
+				<label>Limit temperature condenser defrost termination</label>
+				<description>Limit temperature condenser defrost termination setting</description>
+			</channel>
+			<channel id="p47CompressorRestartDelay" typeId="compressorRestartDelayTime">
+				<label>P47 Compressor restart delay</label>
+				<description>P47 Compressor restart delay setting</description>
+			</channel>
+			<channel id="p48ExhaustFanSpeed" typeId="exhaustFanSpeed">
+				<label>P48 Exhaust fan speed</label>
+				<description>P48 Exhaust fan speed setting</description>
+			</channel>
+			<channel id="maxDefrostDurationAAExchanger" typeId="compressorRestartDelayTime">
+				<label>Max defrost duration AA exchanger</label>
+				<description>Max defrost duration AA exchanger setting</description>
+			</channel>
+			<channel id="defrostStartThreshold" typeId="defrostStartThreshold">
+				<label>Defrost start threshold</label>
+				<description>Defrost start threshold setting</description>
+			</channel>
+			<channel id="volumeFlowFilterReplacement" typeId="volumeFlowFilterReplacement">
+				<label>Volume flow filter replacement</label>
+				<description>Volume flow filter replacement setting</description>
+			</channel>
+			<channel id="p85DefrostModeAAHE" typeId="defrostModeAAHE">
+				<label>P85 Defrost mode AA HE</label>
+				<description>P85 Defrost mode AA HE setting</description>
+			</channel>
+		</channels>
+	</channel-group-type>
+	<channel-group-type id="channelGroupTypeCirculationPump">
+		<label>Settings Circulation Pump</label>
+		<description>Reads Circulation Pump settings of the heat pump.</description>
+		<channels>
+			<channel id="p54minStartupCycles" typeId="minStartupCycles">
+				<label>P54 minimum startup cycles</label>
+				<description>P54 minimum startup cycles setting</description>
+			</channel>
+			<channel id="p55maxStartupCycles" typeId="maxStartupCycles">
+				<label>P55 max startup cycles</label>
+				<description>P55 max startup cycles setting</description>
+			</channel>
+			<channel id="p56OutsideTemperatureMinHeatingCycles" typeId="outsideTemperatureMinHeatingCycles">
+				<label>P56 Outside temperature min heating cycles</label>
+				<description>P56 Outside temperature min heating cycles</description>
+			</channel>
+			<channel id="p57OutsideTemperatureMaxHeatingCycles" typeId="outsideTemperatureMaxHeatingCycles">
+				<label>P56 Outside temperature max heating cycles</label>
+				<description>P56 Outside temperature max heating cycles</description>
+			</channel>
+			<channel id="P58SuppressTemperatureCaptureDuringPumpStart" typeId="outsideTemperatureMinHeatingCycles">
+				<label>P58 Suppress temperature capture during pump start</label>
+				<description>P58 Suppress temperature capture during pump start</description>
+			</channel>
+		</channels>
+	</channel-group-type>
+	<channel-group-type id="channelGroupTypeHeatingProgram">
+		<label>Settings Heating Program</label>
+		<description>Reads Heating Program settings of the heat pump.</description>
+		<channels>
+			<channel id="hP1StartTime" typeId="timeSetting">
+				<label>HP1 Start time</label>
+				<description>HP1 Start time setting</description>
+			</channel>
+			<channel id="hP1StopTime" typeId="timeSetting">
+				<label>HP1 Stop time</label>
+				<description>HP1 Stop time setting</description>
+			</channel>
+			<channel id="hP1Monday" typeId="switchSetting">
+				<label>HP1 Monday</label>
+				<description>HP1 Monday setting</description>
+			</channel>
+			<channel id="hP1Tuesday" typeId="switchSetting">
+				<label>HP1 Tuesday</label>
+				<description>HP1 Tuesday setting</description>
+			</channel>
+			<channel id="hP1Wednesday" typeId="switchSetting">
+				<label>HP1 Tuesday</label>
+				<description>HP1 Tuesday setting</description>
+			</channel>
+			<channel id="hP1Thursday" typeId="switchSetting">
+				<label>HP1 Thursday</label>
+				<description>HP1 Thursday setting</description>
+			</channel>
+			<channel id="hP1Friday" typeId="switchSetting">
+				<label>HP1 Friday</label>
+				<description>HP1 Friday setting</description>
+			</channel>
+			<channel id="hP1Saturday" typeId="switchSetting">
+				<label>HP1 Saturday</label>
+				<description>HP1 Saturday setting</description>
+			</channel>
+			<channel id="hP1Sunday" typeId="switchSetting">
+				<label>HP1 Sunday</label>
+				<description>HP1 Sunday setting</description>
+			</channel>
+			<channel id="hP1Enabled" typeId="switchSetting">
+				<label>HP1 Enabled</label>
+				<description>HP1 Enabled setting</description>
+			</channel>
+			<channel id="hP2StartTime" typeId="timeSetting">
+				<label>HP2 Start time</label>
+				<description>HP2 Start time setting</description>
+			</channel>
+			<channel id="hP2StopTime" typeId="timeSetting">
+				<label>HP2 Stop time</label>
+				<description>HP2 Stop time setting</description>
+			</channel>
+			<channel id="hP2Monday" typeId="switchSetting">
+				<label>HP2 Monday</label>
+				<description>HP2 Monday setting</description>
+			</channel>
+			<channel id="hP2Tuesday" typeId="switchSetting">
+				<label>HP2 Tuesday</label>
+				<description>HP2 Tuesday setting</description>
+			</channel>
+			<channel id="hP2Wednesday" typeId="switchSetting">
+				<label>HP2 Tuesday</label>
+				<description>HP2 Tuesday setting</description>
+			</channel>
+			<channel id="hP2Thursday" typeId="switchSetting">
+				<label>HP2 Thursday</label>
+				<description>HP2 Thursday setting</description>
+			</channel>
+			<channel id="hP2Friday" typeId="switchSetting">
+				<label>HP2 Friday</label>
+				<description>HP2 Friday setting</description>
+			</channel>
+			<channel id="hP2Saturday" typeId="switchSetting">
+				<label>HP2 Saturday</label>
+				<description>HP2 Saturday setting</description>
+			</channel>
+			<channel id="hP2Sunday" typeId="switchSetting">
+				<label>HP2 Sunday</label>
+				<description>HP2 Sunday setting</description>
+			</channel>
+			<channel id="hP2Enabled" typeId="switchSetting">
+				<label>HP2 Enabled</label>
+				<description>HP2 Enabled setting</description>
+			</channel>
+		</channels>
+	</channel-group-type>
+	<channel-group-type id="channelGroupTypeDomesticHotWaterProgram">
+		<label>Settings Domestic Hot Water Program</label>
+		<description>Reads Domestic Hot Water Program settings of the heat pump.</description>
+		<channels>
+			<channel id="bP1StartTime" typeId="timeSetting">
+				<label>BP1 Start time</label>
+				<description>BP1 Start time setting</description>
+			</channel>
+			<channel id="bP1StopTime" typeId="timeSetting">
+				<label>BP1 Stop time</label>
+				<description>BP1 Stop time setting</description>
+			</channel>
+			<channel id="bP1Monday" typeId="switchSetting">
+				<label>BP1 Monday</label>
+				<description>BP1 Monday setting</description>
+			</channel>
+			<channel id="bP1Tuesday" typeId="switchSetting">
+				<label>BP1 Tuesday</label>
+				<description>BP1 Tuesday setting</description>
+			</channel>
+			<channel id="bP1Wednesday" typeId="switchSetting">
+				<label>BP1 Tuesday</label>
+				<description>BP1 Tuesday setting</description>
+			</channel>
+			<channel id="bP1Thursday" typeId="switchSetting">
+				<label>BP1 Thursday</label>
+				<description>BP1 Thursday setting</description>
+			</channel>
+			<channel id="bP1Friday" typeId="switchSetting">
+				<label>BP1 Friday</label>
+				<description>BP1 Friday setting</description>
+			</channel>
+			<channel id="bP1Saturday" typeId="switchSetting">
+				<label>BP1 Saturday</label>
+				<description>BP1 Saturday setting</description>
+			</channel>
+			<channel id="bP1Sunday" typeId="switchSetting">
+				<label>BP1 Sunday</label>
+				<description>BP1 Sunday setting</description>
+			</channel>
+			<channel id="bP1Enabled" typeId="switchSetting">
+				<label>BP1 Enabled</label>
+				<description>BP1 Enabled setting</description>
+			</channel>
+		</channels>
+	</channel-group-type>
+	<channel-group-type id="channelGroupTypeVentilationProgram">
+		<label>Settings Ventilation Program</label>
+		<description>Reads Ventilation Program settings of the heat pump.</description>
+		<channels>
+			<channel id="lP1StartTime" typeId="timeSetting">
+				<label>LP1 Start time</label>
+				<description>LP1 Start time setting</description>
+			</channel>
+			<channel id="lP1StopTime" typeId="timeSetting">
+				<label>LP1 Stop time</label>
+				<description>LP1 Stop time setting</description>
+			</channel>
+			<channel id="lP1Monday" typeId="switchSetting">
+				<label>LP1 Monday</label>
+				<description>LP1 Monday setting</description>
+			</channel>
+			<channel id="lP1Tuesday" typeId="switchSetting">
+				<label>LP1 Tuesday</label>
+				<description>LP1 Tuesday setting</description>
+			</channel>
+			<channel id="lP1Wednesday" typeId="switchSetting">
+				<label>LP1 Tuesday</label>
+				<description>LP1 Tuesday setting</description>
+			</channel>
+			<channel id="lP1Thursday" typeId="switchSetting">
+				<label>LP1 Thursday</label>
+				<description>LP1 Thursday setting</description>
+			</channel>
+			<channel id="lP1Friday" typeId="switchSetting">
+				<label>LP1 Friday</label>
+				<description>LP1 Friday setting</description>
+			</channel>
+			<channel id="lP1Saturday" typeId="switchSetting">
+				<label>LP1 Saturday</label>
+				<description>LP1 Saturday setting</description>
+			</channel>
+			<channel id="lP1Sunday" typeId="switchSetting">
+				<label>LP1 Sunday</label>
+				<description>LP1 Sunday setting</description>
+			</channel>
+			<channel id="lP1Enabled" typeId="switchSetting">
+				<label>LP1 Enabled</label>
+				<description>LP1 Enabled setting</description>
+			</channel>
+			<channel id="lP2StartTime" typeId="timeSetting">
+				<label>LP2 Start time</label>
+				<description>LP2 Start time setting</description>
+			</channel>
+			<channel id="lP2StopTime" typeId="timeSetting">
+				<label>LP2 Stop time</label>
+				<description>LP2 Stop time setting</description>
+			</channel>
+			<channel id="lP2Monday" typeId="switchSetting">
+				<label>LP2 Monday</label>
+				<description>LP2 Monday setting</description>
+			</channel>
+			<channel id="lP2Tuesday" typeId="switchSetting">
+				<label>LP2 Tuesday</label>
+				<description>LP2 Tuesday setting</description>
+			</channel>
+			<channel id="lP2Wednesday" typeId="switchSetting">
+				<label>LP2 Tuesday</label>
+				<description>LP2 Tuesday setting</description>
+			</channel>
+			<channel id="lP2Thursday" typeId="switchSetting">
+				<label>LP2 Thursday</label>
+				<description>LP2 Thursday setting</description>
+			</channel>
+			<channel id="lP2Friday" typeId="switchSetting">
+				<label>LP2 Friday</label>
+				<description>LP2 Friday setting</description>
+			</channel>
+			<channel id="lP2Saturday" typeId="switchSetting">
+				<label>LP2 Saturday</label>
+				<description>LP2 Saturday setting</description>
+			</channel>
+			<channel id="lP2Sunday" typeId="switchSetting">
+				<label>LP2 Sunday</label>
+				<description>LP2 Sunday setting</description>
+			</channel>
+			<channel id="lP2Enabled" typeId="switchSetting">
+				<label>LP2 Enabled</label>
+				<description>LP2 Enabled setting</description>
+			</channel>
+		</channels>
+	</channel-group-type>
+	<channel-group-type id="channelGroupTypeAbsenceProgram">
+		<label>Settings Absence Program</label>
+		<description>Reads Absence Program settings of the heat pump.</description>
+		<channels>
+			<channel id="aP0DurationUntilAbsenceStart" typeId="timeAp0Setting">
+				<label>Time duration to start Absence Program</label>
+				<description>Time duration to start Absence Program</description>
+			</channel>
+			<channel id="aP0AbsenceDuration" typeId="timeAp0Setting">
+				<label>Absence Duration</label>
+				<description>Absence duration time setting</description>
+			</channel>
+			<channel id="aP0EnableAbsenceProgram" typeId="switchSetting">
+				<label>Enable Absence Program</label>
+				<description>Enable Absence Program</description>
+			</channel>
+		</channels>
+	</channel-group-type>
+	<channel-group-type id="channelGroupTypeRestartAndMixerTime">
+		<label>Restart and mixer time</label>
+		<description>Read restart and mixer time setting values.</description>
+		<channels>
+			<channel id="p59RestartBeforeSetbackEnd" typeId="restartBeforeSetbackEnd">
+				<label>P59 Restart before set back ends</label>
+				<description>P59 Restart before set back ends setting</description>
+			</channel>
+			<channel id="mixerProportionalRange" typeId="mixerProportionalRange">
+				<label>Mixer Proportional Range</label>
+				<description>Mixer Proportional Range setting</description>
+			</channel>
+			<channel id="derivativeMixerTime" typeId="derivativeMixerTime">
+				<label>Derivative Mixer Time</label>
+				<description>Derivative Mixer Time</description>
+			</channel>
+			<channel id="mixerTimeInterval" typeId="mixerTimeInterval">
+				<label>Mixer Time Interval</label>
+				<description>Mixer Time Interval</description>
+			</channel>
+		</channels>
+	</channel-group-type>
+	<channel-group-type id="channelGroupTypeDomesticHotWater">
+		<label>Domestic Hot Water setting</label>
+		<description>Read Domestic Water setting values.</description>
+		<channels>
+			<channel id="p32StartupHysteresisDHWTemperature" typeId="startupHysteresisDHWTemperature">
+				<label>P32 Startup Hysteresis DHW Temperature</label>
+				<description>P32 Startup Hysteresis DHW Temperature setting</description>
+			</channel>
+			<channel id="p33TimeDelayElectricalReheating" typeId="timeDelayElectricalReheating">
+				<label>P33 Time Delay Electrical Re-heating</label>
+				<description>P33 Time Delay Electrical Re-heating setting</description>
+			</channel>
+			<channel id="p34OutsideTemperatureLimitForElectricalReheating" typeId="limitForElectricalReheating">
+				<label>P34 Outside Temperature limit for Electrical Re-heating</label>
+				<description>P34 Outside Temperature limit for Electrical Re-heating</description>
+			</channel>
+			<channel id="p35PasteurisationInterval" typeId="pasteurisationInterval">
+				<label>P35 Pasteurization Interval</label>
+				<description>P35 Pasteurization Interval</description>
+			</channel>
+			<channel id="p36MaxDurationDHWLoading" typeId="maxDurationDHWLoading">
+				<label>P36 Max Duration DHW Loading</label>
+				<description>P36 Max Duration DHW Loading</description>
+			</channel>
+			<channel id="pasteurisationHeatupTemperature" typeId="pasteurisationHeatupTemperature">
+				<label>Pasteurization Heat-up Temperature</label>
+				<description>Pasteurization Heat-up Temperature</description>
+			</channel>
+			<channel id="noOfEnabledElectricalReheatStagesDHWLoading"
+				typeId="noOfEnabledElectricalReheatStagesDHWLoading">
+				<label>No Of Enabled Electrical Re-heat Stages DHW Loading</label>
+				<description>No Of Enabled Electrical Re-heat Stages DHW Loading</description>
+			</channel>
+			<channel id="maxFlowTemperatureDHWMode" typeId="maxFlowTemperatureDHWMode">
+				<label>Max Flow Temperature DHW Mode</label>
+				<description>Max Flow Temperature DHW Mode</description>
+			</channel>
+			<channel id="compressorShutdownDHWLoading" typeId="switchSetting">
+				<label>Compressor Shutdown DHW Loading</label>
+				<description>Compressor Shutdown DHW Loading</description>
+			</channel>
+		</channels>
+	</channel-group-type>
+	<channel-group-type id="channelGroupTypeLastErrors">
+		<label>Last Errors</label>
+		<description>Reads the list of last errors from the heat pump.</description>
+		<channels>
+			<channel id="fA00NoOfErrors" typeId="noOfErrors">
+				<label>FA00 Number of errors</label>
+				<description>FA00 Numbers of errors listed in the heat pump</description>
+			</channel>
+			<channel id="faultCode0" typeId="errorCode">
+				<label>Fault 1 Error Code</label>
+				<description>Fault 1 Error Code.</description>
+			</channel>
+			<channel id="faultTime0" typeId="errorTime">
+				<label>Fault 1 Time</label>
+				<description>Fault 1 Time.</description>
+			</channel>
+			<channel id="faultDate0" typeId="errorDate">
+				<label>Fault 1 Date</label>
+				<description>Fault 1 Date.</description>
+			</channel>
+			<channel id="faultCode1" typeId="errorCode">
+				<label>Fault 2 Error Code</label>
+				<description>Fault 2 Error Code.</description>
+			</channel>
+			<channel id="faultTime1" typeId="errorTime">
+				<label>Fault 2 Time</label>
+				<description>Fault 2 Time.</description>
+			</channel>
+			<channel id="faultDate1" typeId="errorDate">
+				<label>Fault 2 Date</label>
+				<description>Fault 2 Date.</description>
+			</channel>
+			<channel id="faultCode2" typeId="errorCode">
+				<label>Fault 3 Error Code</label>
+				<description>Fault 3 Error Code.</description>
+			</channel>
+			<channel id="faultTime2" typeId="errorTime">
+				<label>Fault 3 Time</label>
+				<description>Fault 3 Time.</description>
+			</channel>
+			<channel id="faultDate2" typeId="errorDate">
+				<label>Fault 3 Date</label>
+				<description>Fault 3 Date.</description>
+			</channel>
+			<channel id="faultCode3" typeId="errorCode">
+				<label>Fault 4 Error Code</label>
+				<description>Fault 4 Error Code.</description>
+			</channel>
+			<channel id="faultTime3" typeId="errorTime">
+				<label>Fault 4 Time</label>
+				<description>Fault 4 Time.</description>
+			</channel>
+			<channel id="faultDate3" typeId="errorDate">
+				<label>Fault 4 Date</label>
+				<description>Fault 4 Date.</description>
+			</channel>
+		</channels>
+	</channel-group-type>
+	<channel-group-type id="channelGroupTypeOperationMode">
+		<label>Operation Mode</label>
+		<description>Reads Operation mode of the heat pump.</description>
+		<channels>
+			<channel id="opMode" typeId="operationMode">
+				<label>Operation mode</label>
+				<description>Operation mode</description>
+			</channel>
+			<channel id="progStateHC" typeId="programState">
+				<label>Program State HC</label>
+				<description>Program State HC</description>
+			</channel>
+			<channel id="progStateDHW" typeId="programState">
+				<label>Program State DHW</label>
+				<description>Program State DHW</description>
+			</channel>
+			<channel id="progStateFAN" typeId="programState">
+				<label>Program State Fan</label>
+				<description>Program State Fan</description>
+			</channel>
+		</channels>
+	</channel-group-type>
+	<channel-group-type id="channelGroupTypeOperationMode2">
+		<label>Operation Mode</label>
+		<description>Reads Operation mode of the heat pump.</description>
+		<channels>
+			<channel id="opMode" typeId="operationMode2">
+				<label>Operation mode</label>
+				<description>Operation mode</description>
+			</channel>
+			<channel id="progStateHC" typeId="programState">
+				<label>Program State HC</label>
+				<description>Program State HC</description>
+			</channel>
+			<channel id="progStateDHW" typeId="programState">
+				<label>Program State DHW</label>
+				<description>Program State DHW</description>
+			</channel>
+			<channel id="progStateFAN" typeId="programState">
+				<label>Program State Fan</label>
+				<description>Program State Fan</description>
+			</channel>
+            <channel id="baseTimeAP0" typeId="timeAp0">
+                <label>Base time AP0</label>
+                <description>Base time AP0</description>
+            </channel>
+            <channel id="statusAP0" typeId="hourCounter">
+                <label>Status AP0</label>
+                <description>Status AP0</description>
+            </channel>            
+            <channel id="startTimeAP0" typeId="timeAp0">
+                <label>Start time AP0</label>
+                <description>Start time AP0</description>
+            </channel>  
+            <channel id="endTimeAP0" typeId="timeAp0">
+                <label>End time AP0</label>
+                <description>End time AP0</description>
+            </channel> 
+		</channels>
+	</channel-group-type>
+	<!-- Stefan -->
+    <channel-group-type id="tecalorDebugGroup">
+        <label>Tecalor Debug Group</label>
+        <description>Tecalor Debug Group for testing new features</description>
+        <channels>
+            <channel id="fanStageDay" typeId="tecalorFanStage">             
+                <label>Fan Stage Day</label>
+                <description>Stage of the fan from 0-3 by day</description>        
+            </channel>
+            <channel id="fanStageNight" typeId="tecalorFanStage">               
+                <label>Fan Stage Night</label>
+                <description>Stage of the fan from 0-3 by night</description>        
+            </channel>
+        </channels>
+    </channel-group-type> 
+    <!-- End-Stefan -->
+</thing:thing-descriptions>
