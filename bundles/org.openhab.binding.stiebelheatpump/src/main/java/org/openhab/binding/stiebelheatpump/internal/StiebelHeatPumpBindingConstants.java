@@ -50,6 +50,8 @@ public class StiebelHeatPumpBindingConstants {
     public static final String CHANNEL_RESPONDBYTES = "version" + CHANNELGROUPSEPERATOR + "respondBytes";
     // public static final String CHANNEL_RESPONDBYTES = "respondBytes";
     public static final String CHANNEL_LASTUPDATE = "currentValues" + CHANNELGROUPSEPERATOR + "refreshTime";
+    public static final String CHANNEL_FAN_STAGE_DAY = "tecalorDebug" + CHANNELGROUPSEPERATOR + "fanStageDay";
+    public static final String CHANNEL_FAN_STAGE_NIGHT = "tecalorDebug" + CHANNELGROUPSEPERATOR + "fanStageNight";
 
     public static final String CHANNELTYPE_TIMESETTING = BINDING_ID + ":" + "timeSetting";
     public static final String CHANNELTYPE_SWITCHSETTING = BINDING_ID + ":" + "switchSetting";

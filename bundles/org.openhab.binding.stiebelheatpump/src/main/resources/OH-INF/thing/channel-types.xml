@@ -454,4 +454,11 @@
 			</options>
 		</state>
 	</channel-type>
+	<!-- Stefan -->    
+    <channel-type id="tecalorFanStage">
+        <item-type>Number</item-type>
+        <label>Fan Stage</label>
+        <description>Stage of the fan from 0-3</description>        
+    </channel-type>    
+    <!-- End-Stefan -->
 </thing:thing-descriptions>
