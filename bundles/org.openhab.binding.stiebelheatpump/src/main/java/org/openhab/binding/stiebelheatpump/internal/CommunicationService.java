@@ -408,7 +408,7 @@ public class CommunicationService {
      *         FC -> request byte
      *         10 03 -> Footer ending the communication
      */
-    private byte[] setData(byte[] request) throws StiebelHeatPumpException {
+    public byte[] setData(byte[] request) throws StiebelHeatPumpException {
         try {
             startCommunication();
             establishRequest(request);
