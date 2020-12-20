@@ -1,0 +1,457 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<thing:thing-descriptions bindingId="stiebelheatpump"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:thing="http://eclipse.org/smarthome/schemas/thing-description/v1.0.0"
+	xsi:schemaLocation="http://eclipse.org/smarthome/schemas/thing-description/v1.0.0 http://eclipse.org/smarthome/schemas/thing-description-1.0.0.xsd">
+
+	<channel-type id="version">
+		<item-type>String</item-type>
+		<label>Version</label>
+		<description>Firmware version of heat pump.</description>
+		<state readOnly="true" />
+	</channel-type>
+	<channel-type id="requestBytes" advanced="true">
+		<item-type>String</item-type>
+		<label>Dump heat pump response for request byte </label>
+		<description>Takes this request bytes and asks for a heat pump response, which is logged in the log.</description>
+		<state pattern="%s" />
+	</channel-type>
+    <channel-type id="respondBytes" advanced="true">
+        <item-type>String</item-type>
+        <label>Response form heat pump</label>
+        <description>Represents the heat pump responds of the dump request.</description>
+        <state pattern="%s" readOnly="true" />
+    </channel-type>
+    <channel-type id="dumpResponse" advanced="true">
+        <item-type>Switch</item-type>
+        <label>Dump heat pump response </label>
+        <description>Takes standard request bytes and asks for a heat pump response, which is logged in the log.</description>
+    </channel-type>
+	<channel-type id="dateTime">
+		<item-type>String</item-type>
+		<label>Last refresh</label>
+		<description>Heatpump refreshed date time</description>
+		<category>Date</category>
+		<state readOnly="true" />
+	</channel-type>
+	<channel-type id="setTime" advanced="true">
+		<item-type>Switch</item-type>
+		<label>Set time</label>
+		<description>Set the time of the heat pump to system time of openHAB.</description>
+	</channel-type>
+	<channel-type id="temperature">
+		<item-type>Number:Temperature</item-type>
+		<label>Temperature</label>
+		<category>Temperature</category>
+		<state pattern="%.1f %unit%" readOnly="true" />
+	</channel-type>
+	<channel-type id="speed">
+		<item-type>Number:Dimensionless</item-type>
+		<label>Fan speed in %</label>
+		<state pattern="%.0f %%" readOnly="true" />
+	</channel-type>
+	<channel-type id="hourCounter">
+		<item-type>Number</item-type>
+		<label>Operation Counter in [h]</label>
+		<state pattern="%d h" readOnly="true" />
+	</channel-type>
+	<channel-type id="counter">
+		<item-type>Number</item-type>
+		<label>Operation Counter</label>
+		<state pattern="%d" readOnly="true" />
+	</channel-type>
+	<channel-type id="temperatureSetting" advanced="true">
+		<item-type>Number:Temperature</item-type>
+		<label>Temperature Setting in [°C]</label>
+		<state min="10" max="30" step="0.1" pattern="%.1f %unit%" />
+	</channel-type>
+	<channel-type id="dHWTemperatureSetting" advanced="true">
+		<item-type>Number:Temperature</item-type>
+		<label>DHW Temperature Setting in [°C]</label>
+		<state min="10" max="55" step="0.1" pattern="%.1f %unit%" />
+	</channel-type>
+	<channel-type id="temperatureManualSetting" advanced="true">
+		<item-type>Number:Temperature</item-type>
+		<label>Temperature Setting in [°C]</label>
+		<state min="10" max="65" step="0.1" pattern="%.1f %unit%" />
+	</channel-type>
+	<channel-type id="maxFlowTemperatureSetting" advanced="true">
+		<item-type>Number:Temperature</item-type>
+		<label>Max flow temperature Setting in [°C]</label>
+		<state min="10" max="75" step="0.1" pattern="%.1f %unit%" />
+	</channel-type>
+	<channel-type id="changeoverTemperatureSummerWinter" advanced="true">
+		<item-type>Number:Temperature</item-type>
+		<label>Max flow temperature Setting in [°C]</label>
+		<state min="10" max="25" step="0.1" pattern="%.1f %unit%" />
+	</channel-type>
+	<channel-type id="hysteresisChangeoverTemperatureSummerWinter" advanced="true">
+		<item-type>Number</item-type>
+		<label>Max flow temperature Setting in [K]</label>
+		<state min="1" max="5" step="0.1" pattern="%.1f K" />
+	</channel-type>
+	<channel-type id="outsideTemperatureAdjustment" advanced="true">
+		<item-type>Number</item-type>
+		<label>Outside temperature adjustment Setting in [h]</label>
+		<state min="0" max="24" step="1.0" pattern="%d h" />
+	</channel-type>
+	<channel-type id="bivalencePoint" advanced="true">
+		<item-type>Number:Temperature</item-type>
+		<label>Bivalence point Setting in [°C]</label>
+		<state min="-10" max="20" step="0.1" pattern="%.1f %unit%" />
+	</channel-type>
+	<channel-type id="delayedEnableReheating" advanced="true">
+		<item-type>Number</item-type>
+		<label>Delayed enable re-heating</label>
+		<description>Delayed enable re-heating.</description>
+		<state min="0" max="60" step="1" pattern="%d min" />
+	</channel-type>
+	<channel-type id="outputElectricalHeating" advanced="true">
+		<item-type>Number:Energy</item-type>
+		<label>Output electrical heating</label>
+		<description>Output electrical heating.</description>
+		<state min="0" max="10" step="1" pattern="%.1f %unit%" />
+	</channel-type>
+	<channel-type id="increaseHeating" advanced="true">
+		<item-type>Number</item-type>
+		<label>Increase heating</label>
+		<description>Increase heating of heat circuit.</description>
+		<state min="1" max="5" step="0.1" pattern="%.1f %unit%"/>
+	</channel-type>
+	<channel-type id="lowEndPointHeating" advanced="true">
+		<item-type>Number</item-type>
+		<label>Low end point heating Setting in [K]</label>
+		<state min="1" max="20" step="0.1" pattern="%.1f K" />
+	</channel-type>
+	<channel-type id="roomInfluenceHeating" advanced="true">
+		<item-type>Number</item-type>
+		<label>Room influence heating</label>
+		<description>Room influence heating of heat circuit.</description>
+		<state min="1" max="10" step="0.1" />
+	</channel-type>
+	<channel-type id="temperatureCaptureReturnFlow" advanced="true">
+		<item-type>Number</item-type>
+		<label>Temperature capture return flow</label>
+		<state min="1" max="100" step="1.0" pattern="%d %%" />
+	</channel-type>
+	<channel-type id="maxSetHeatingCircuitTemperature" advanced="true">
+		<item-type>Number:Temperature</item-type>
+		<label>Max set heating circuit temperature Setting in [°C]</label>
+		<state min="20" max="65" step="0.1" pattern="%.1f %unit%" />
+	</channel-type>
+	<channel-type id="minSetHeatingCircuitTemperature" advanced="true">
+		<item-type>Number:Temperature</item-type>
+		<label>Min set heating circuit temperature Setting in [°C]</label>
+		<state min="5" max="40" step="0.1" pattern="%.1f %unit%" />
+	</channel-type>
+	<channel-type id="temperaturLimitEvaporator" advanced="true">
+		<item-type>Number:Temperature</item-type>
+		<label>Temperature limit evaporator Setting in [°C]</label>
+		<state min="10" max="30" step="0.1" pattern="%.1f %unit%" />
+	</channel-type>
+	<channel-type id="maxEvaporatorDefrostTime" advanced="true">
+		<item-type>Number:Temperature</item-type>
+		<label>Max evaporator defrost time Setting in [°C]</label>
+		<state min="2" max="20" step="1.0" pattern="%d min" />
+	</channel-type>
+	<channel-type id="temperaturLimitCondenser" advanced="true">
+		<item-type>Number:Temperature</item-type>
+		<label>Temperature limit condenser Setting in [°C]</label>
+		<state min="5" max="10" step="0.1" pattern="%.1f %unit%" />
+	</channel-type>
+	<channel-type id="compressorRestartDelayTime" advanced="true">
+		<item-type>Number</item-type>
+		<label>Compressor restart delay time in [min]</label>
+		<state min="0" max="20" step="1.0" pattern="%d min" />
+	</channel-type>
+	<channel-type id="maxDefrostDurationAAExchanger" advanced="true">
+		<item-type>Number</item-type>
+		<label>Max defrost duration AA exchanger time in [min]</label>
+		<state min="0" max="120" step="1.0" pattern="%d min" />
+	</channel-type>
+	<channel-type id="defrostStartThreshold" advanced="true">
+		<item-type>Number</item-type>
+		<label>Defrost start threshold Setting</label>
+		<state min="0" max="100" step="1" pattern="%d %%" />
+	</channel-type>
+	<channel-type id="volumeFlowFilterReplacement" advanced="true">
+		<item-type>Number</item-type>
+		<label>Defrost start threshold Setting</label>
+		<state min="50" max="100" step="1" pattern="%d %%" />
+	</channel-type>
+	<channel-type id="defrostModeAAHE" advanced="true">
+		<item-type>Number</item-type>
+		<label>Defrost mode AA HE Setting</label>
+		<state min="1" max="5" step="1" />
+	</channel-type>
+	<channel-type id="exhaustFanSpeed" advanced="true">
+		<item-type>Number</item-type>
+		<label>Exhaust fan speed Setting</label>
+		<state min="10" max="100" step="1" pattern="%d %%" />
+	</channel-type>
+	<channel-type id="fanStageSetting" advanced="true">
+		<item-type>Number</item-type>
+		<label>Fan stage Setting</label>
+		<state min="0" max="3" step="1" />
+	</channel-type>
+	<channel-type id="fanStageSettingAir" advanced="true">
+		<item-type>Number</item-type>
+		<label>Fan stage air Setting</label>
+		<state min="60" max="280" step="1" pattern="%d m^3/h" />
+	</channel-type>
+	<channel-type id="ventilationTimeUnscheduled" advanced="true">
+		<item-type>Number</item-type>
+		<label>Unscheduled ventilation time</label>
+		<state min="0" max="1000" step="1" pattern="%d min" />
+	</channel-type>
+	<channel-type id="operatingModePassiveCooling" advanced="true">
+		<item-type>Number</item-type>
+		<label>Operating mode passive cooling</label>
+		<state min="0" max="2" step="1" />
+	</channel-type>
+	<channel-type id="stoveFireplaceOperation" advanced="true">
+		<item-type>Number</item-type>
+		<label>Stove fireplace operation</label>
+		<state min="0" max="4" step="1" />
+	</channel-type>
+	<channel-type id="hysteresisHeatingWide" advanced="true">
+		<item-type>Number</item-type>
+		<label>Hysteresis heating Setting in [K]</label>
+		<state min="0" max="10" step="0.1" pattern="%.1f K" />
+	</channel-type>
+	<channel-type id="hysteresisHeatingNarrow" advanced="true">
+		<item-type>Number</item-type>
+		<label>Hysteresis heating Setting in [K]</label>
+		<state min="0" max="5" step="0.1" pattern="%.1f K" />
+	</channel-type>
+	<channel-type id="hysteresisHeatingSwitching" advanced="true">
+		<item-type>Number</item-type>
+		<label>Hysteresis switching heating Setting</label>
+		<state min="1" max="5" step="1.0" />
+	</channel-type>
+	<channel-type id="switchingValueIntegralPortionHeating" advanced="true">
+		<item-type>Number</item-type>
+		<label>Switching value for integral portion heating Setting</label>
+		<state min="1" max="999" step="1.0" />
+	</channel-type>
+	<channel-type id="outputElectricalHeatingStage" advanced="true">
+		<item-type>Number:Power</item-type>
+		<label>Switching value for integral portion heating Setting</label>
+		<state min="0" max="10" step="1" pattern="%.1f %unit%" />
+	</channel-type>
+	<channel-type id="minStartupCycles" advanced="true">
+		<item-type>Number</item-type>
+		<label>Minimum startup cycles Setting in [per/day]</label>
+		<state min="1" max="24" step="1" pattern="%d per/day" />
+	</channel-type>
+	<channel-type id="maxStartupCycles" advanced="true">
+		<item-type>Number</item-type>
+		<label>Max startup cycles Setting in [per/day]</label>
+		<state min="1" max="288" step="1" pattern="%d per/day" />
+	</channel-type>
+	<channel-type id="outsideTemperatureMinHeatingCycles" advanced="true">
+		<item-type>Number:Temperature</item-type>
+		<label>Outside temperature min heating cycles Setting in [°C]</label>
+		<state min="0" max="20" step="0.1" pattern="%.1f %unit%" />
+	</channel-type>
+	<channel-type id="outsideTemperatureMaxHeatingCycles" advanced="true">
+		<item-type>Number:Temperature</item-type>
+		<label>Outside temperature max heating cycles Setting in [°C]</label>
+		<state min="0" max="25" step="0.1" pattern="%.1f %unit%" />
+	</channel-type>
+	<channel-type id="suppressTemperatureCaptureDuringPumpStart" advanced="true">
+		<item-type>Number</item-type>
+		<label>Suppress temperature capture during pump start Setting in [sec]</label>
+		<state min="0" max="120" step="1" pattern="%d sec" />
+	</channel-type>
+	<channel-type id="timeSetting" advanced="true">
+		<item-type>String</item-type>
+		<label>Time settings Setting in [hh:mm]</label>
+		<state min="0" max="2359" pattern="%s hh:mm" />
+	</channel-type>
+	<channel-type id="switchSetting" advanced="true">
+		<item-type>Switch</item-type>
+		<label>Enabling switch</label>
+		<state min="0" max="1" />
+	</channel-type>
+	<channel-type id="contactStatus">
+		<item-type>Contact</item-type>
+		<label>Status Contact</label>
+		<state readOnly="true" />
+	</channel-type>
+	<channel-type id="timeAp0Setting" advanced="true">
+		<item-type>Number</item-type>
+		<label>Time settings in [h]</label>
+		<state min="0" max="2388" pattern="%.1f h" />
+	</channel-type>
+    <channel-type id="timeAp0" advanced="true">
+        <item-type>Number</item-type>
+        <label>Time in [h]</label>
+        <state min="0" max="2388" pattern="%.1f h" readOnly="true"/>
+    </channel-type>	
+	<channel-type id="restartBeforeSetbackEnd" advanced="true">
+		<item-type>Number</item-type>
+		<label>Time settings Setting in [min]</label>
+		<state min="0" max="300" step="1" pattern="%d min" />
+	</channel-type>
+	<channel-type id="mixerProportionalRange" advanced="true">
+		<item-type>Number</item-type>
+		<label>Mixer proportional range Setting</label>
+		<state min="1" max="100" step="0.1" pattern="%.1f %%" />
+	</channel-type>
+	<channel-type id="derivativeMixerTime" advanced="true">
+		<item-type>Number</item-type>
+		<label>Derivative mixer time Setting</label>
+		<state min="1" max="100" step="0.1" pattern="%.1f sec" />
+	</channel-type>
+	<channel-type id="mixerTimeInterval" advanced="true">
+		<item-type>Number</item-type>
+		<label>Mixer time interval Setting</label>
+		<state min="1" max="10" step="0.1" pattern="%.1f K/day" />
+	</channel-type>
+	<channel-type id="startupHysteresisDHWTemperature" advanced="true">
+		<item-type>Number</item-type>
+		<label>Startup Hysteresis DHW Temperature Setting in [K]</label>
+		<state min="2" max="20" step="0.1" pattern="%.1f K" />
+	</channel-type>
+	<channel-type id="timeDelayElectricalReheating" advanced="true">
+		<item-type>Number</item-type>
+		<label>Time Delay Electrical Re-heating Setting in [K]</label>
+		<state min="0" max="240" step="1.0" pattern="%d min" />
+	</channel-type>
+	<channel-type id="limitForElectricalReheating" advanced="true">
+		<item-type>Number:Temperature</item-type>
+		<label>Limit for Electrical Re-heating Setting in [°C]</label>
+		<state min="-10" max="10" step="1.0" pattern="%d %unit%" />
+	</channel-type>
+	<channel-type id="pasteurisationInterval" advanced="true">
+		<item-type>Number</item-type>
+		<label>Pasteurization Interval [K/day]</label>
+		<state min="1" max="30" step="1.0" pattern="%d K/day" />
+	</channel-type>
+	<channel-type id="maxDurationDHWLoading" advanced="true">
+		<item-type>Number</item-type>
+		<label>Max Duration DHW Loading [h]</label>
+		<state min="6" max="12" step="1.0" pattern="%d h" />
+	</channel-type>
+	<channel-type id="pasteurisationHeatupTemperature" advanced="true">
+		<item-type>Number:Temperature</item-type>
+		<label>Pasteurization Heat-up Temperature Setting in [°C]</label>
+		<state min="10" max="65" step="0.1" pattern="%.1f %unit%" />
+	</channel-type>
+	<channel-type id="noOfEnabledElectricalReheatStagesDHWLoading" advanced="true">
+		<item-type>Number</item-type>
+		<label>Number Of Enabled Electrical Re-heat Stages DHW Loading</label>
+		<state min="0" max="3" step="1.0" />
+	</channel-type>
+	<channel-type id="maxFlowTemperatureDHWMode" advanced="true">
+		<item-type>Number:Temperature</item-type>
+		<label>Max Flow Temperature DHW Mode</label>
+		<state min="10" max="75" step="0.1" pattern="%.1f %unit%" />
+	</channel-type>
+	<channel-type id="noOfErrors">
+		<item-type>Number</item-type>
+		<label>Number of Errors</label>
+		<description>Number of Errors</description>
+		<state pattern="%d #ERR" readOnly="true" />
+	</channel-type>
+	<channel-type id="errorCode" advanced="true">
+		<item-type>Number</item-type>
+		<label>Error code</label>
+		<description>Error code</description>
+		<state pattern="F%s" readOnly="true" />
+	</channel-type>
+	<channel-type id="errorTime" advanced="true">
+		<item-type>String</item-type>
+		<label>Time [hh:mm]</label>
+		<state pattern="%s hh:mm" readOnly="true" />
+	</channel-type>
+	<channel-type id="errorDate" advanced="true">
+		<item-type>String</item-type>
+		<label>Date [dd-MM]</label>
+		<state pattern="%s dd-MM" readOnly="true" />
+	</channel-type>
+	<channel-type id="weekday" advanced="true">
+		<item-type>Number</item-type>
+		<label>Week day</label>
+		<description>Weekday of the current time.</description>
+		<state min="1" max="7" step="1" pattern="%d" readOnly="true" />
+	</channel-type>
+	<channel-type id="hours" advanced="true">
+		<item-type>Number</item-type>
+		<label>Hours</label>
+		<description>Hours of the current time.</description>
+		<state min="0" max="23" step="1" pattern="%d h" readOnly="true" />
+	</channel-type>
+	<channel-type id="minutes" advanced="true">
+		<item-type>Number</item-type>
+		<label>Minutes</label>
+		<description>Minutes of the current time.</description>
+		<state min="0" max="59" step="1" pattern="%d min" readOnly="true" />
+	</channel-type>
+	<channel-type id="seconds" advanced="true">
+		<item-type>Number</item-type>
+		<label>Seconds</label>
+		<description>Seconds of the current time.</description>
+		<state min="0" max="59" step="1" pattern="%d s" readOnly="true" />
+	</channel-type>
+	<channel-type id="year" advanced="true">
+		<item-type>Number</item-type>
+		<label>Year</label>
+		<description>Year of the current time.</description>
+		<state min="0" max="99" step="1" pattern="%d YY" readOnly="true" />
+	</channel-type>
+	<channel-type id="month" advanced="true">
+		<item-type>Number</item-type>
+		<label>Month</label>
+		<description>Month of the current time.</description>
+		<state min="1" max="12" step="1" pattern="%d MM" readOnly="true" />
+	</channel-type>
+	<channel-type id="day" advanced="true">
+		<item-type>Number</item-type>
+		<label>Day</label>
+		<description>Day of the current time.</description>
+		<state min="1" max="31" step="1" pattern="%d dd" readOnly="true" />
+	</channel-type>
+	<channel-type id="operationMode" advanced="true">
+		<item-type>Number</item-type>
+		<label>Operation Mode</label>
+		<description>Operation Mode.</description>
+		<state readOnly="true">
+			<options>
+				<option value="1">Standby</option>
+				<option value="11">Automatic</option>
+				<option value="3">DayMode</option>
+				<option value="4">Setback</option>
+				<option value="5">DHWMode</option>
+				<option value="14">DHWMode</option>
+				<option value="0">Emergengy</option>
+			</options>
+		</state>
+	</channel-type>
+	<channel-type id="operationMode2" advanced="true">
+		<item-type>Number</item-type>
+		<label>Operation Mode</label>
+		<description>Operation Mode.</description>
+		<state readOnly="true">
+			<options>
+				<option value="0">Manual</option>
+				<option value="1">Automatic</option>
+			</options>
+		</state>
+	</channel-type>
+	<channel-type id="programState" advanced="true">
+		<item-type>Number</item-type>
+		<label>Program State mode</label>
+		<description>Program State mode.</description>
+		<state readOnly="true">
+			<options>
+				<option value="1">Normal</option>
+				<option value="2">Setback</option>
+				<option value="3">Standby</option>
+				<option value="4">Restart</option>
+				<option value="5">Restart</option>
+			</options>
+		</state>
+	</channel-type>
+</thing:thing-descriptions>
