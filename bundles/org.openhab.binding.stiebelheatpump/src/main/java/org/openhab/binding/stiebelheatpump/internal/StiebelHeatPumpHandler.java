@@ -29,6 +29,7 @@ import java.util.regex.Pattern;
 import javax.measure.quantity.Dimensionless;
 import javax.measure.quantity.Power;
 import javax.measure.quantity.Temperature;
+import javax.xml.bind.DatatypeConverter;
 
 import org.openhab.binding.stiebelheatpump.protocol.DataParser;
 import org.openhab.binding.stiebelheatpump.protocol.RecordDefinition;
@@ -154,6 +155,12 @@ public class StiebelHeatPumpHandler extends BaseThingHandler {
                     updateRespondChannel(respondStr);
                     updateState(channelUID, new StringType(requestStr));
                     break;
+                case CHANNEL_FAN_STAGE_DAY:
+                    handleFanStageCommand(true, command, communicationService);
+                    break;
+                case CHANNEL_FAN_STAGE_NIGHT:
+                    handleFanStageCommand(false, command, communicationService);
+                    break;
                 default:
                     // do checks if valid definition is available
                     RecordDefinition updateRecord = heatPumpConfiguration.getRecordDefinitionByChannelId(channelId);
@@ -198,6 +205,41 @@ public class StiebelHeatPumpHandler extends BaseThingHandler {
         } finally {
             // communicationService.disconnect();
             communicationInUse = false;
+        }
+    }
+
+    private void handleFanStageCommand(boolean day, Command command, CommunicationService communicationService) {
+        int position = 0;
+        if (command instanceof DecimalType) {
+            DecimalType dt = (DecimalType) command;
+            position = dt.intValue();
+        } else {
+            logger.warn("Received wrong datatype for fanStage command: {}", command);
+            return;
+        }
+
+        if (position < 0 || position > 3) {
+            logger.error("Received wrong value for fanStage, allowed is only 0-3, but received: {}", position);
+            return;
+        }
+
+        String[] dayValues = new String[] { "0180fc0a056c00001003", "0180fd0a056c00011003", "0180fe0a056c00021003",
+                "0180ff0a056c00031003" };
+        String[] nightValues = new String[] { "0180fd0a056d00001003", "0180fe0a056d00011003", "0180ff0a056d00021003",
+                "0180000a056d00031003" };
+
+        String commandToSend = "";
+        if (day) {
+            commandToSend = dayValues[position];
+        } else {
+            commandToSend = nightValues[position];
+        }
+
+        byte[] commandData = DatatypeConverter.parseHexBinary(commandToSend);
+        try {
+            communicationService.setData(commandData);
+        } catch (StiebelHeatPumpException e) {
+            logger.error("Could not set fanStage", e);
         }
     }
 
@@ -388,10 +430,13 @@ public class StiebelHeatPumpHandler extends BaseThingHandler {
                 return;
             }
             communicationInUse = true;
-            logger.info("Refresh sensor/status data of heat pump.");
+            logger.debug("Refresh sensor/status data of heat pump.");
             try {
                 // communicationService.connect();
                 data = communicationService.getRequestData(heatPumpSensorStatusRefresh.getRequests());
+
+                refreshVentilationStages(communicationService);
+
             } catch (Exception e) {
                 logger.debug("Exception occurred during execution: {}", e.getMessage(), e);
                 updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.OFFLINE.COMMUNICATION_ERROR, e.getMessage());
@@ -402,7 +447,42 @@ public class StiebelHeatPumpHandler extends BaseThingHandler {
             Instant end = Instant.now();
             logger.debug("Sensor/Status refresh took {} seconds.", Duration.between(start, end).getSeconds());
             updateChannels(data);
+
         }, 10, config.refresh, TimeUnit.SECONDS);
+    }
+
+    private void refreshVentilationStages(CommunicationService communicationService) {
+        try {
+            Thread.sleep(1200);
+
+            ChannelUID channelUID = new ChannelUID(getThing().getUID(), CHANNEL_FAN_STAGE_DAY);
+            String getDayValue = "01007c0a056c1003";
+            refreshVentilationStageChannel(channelUID, getDayValue, communicationService);
+
+            Thread.sleep(1200);
+
+            channelUID = new ChannelUID(getThing().getUID(), CHANNEL_FAN_STAGE_NIGHT);
+            String getNightValue = "01007d0a056d1003";
+            refreshVentilationStageChannel(channelUID, getNightValue, communicationService);
+        } catch (InterruptedException e) {
+            // TODO Auto-generated catch block
+            logger.error("Stefan: sleep while reading ventilation stages", e);
+        }
+    }
+
+    private void refreshVentilationStageChannel(ChannelUID channelUID, String command,
+            CommunicationService communicationService) {
+        byte[] request = DatatypeConverter.parseHexBinary(command);
+        try {
+            byte[] reply = communicationService.setData(request);
+            if (reply.length == 10) {
+                byte num = reply[7];
+                int n = new Byte(num).intValue();
+                updateState(channelUID, new DecimalType(n));
+            }
+        } catch (StiebelHeatPumpException e) {
+            logger.warn("Could not refresh data for request fan stage value: {}", command, e);
+        }
     }
 
     /**

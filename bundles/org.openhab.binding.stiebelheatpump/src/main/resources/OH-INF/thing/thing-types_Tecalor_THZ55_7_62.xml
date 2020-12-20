@@ -16,7 +16,7 @@
 			<channel-group id="currentValues" typeId="channelGroupTypeCurrentValues" />
 			<channel-group id="operationCounters" typeId="channelGroupTypeOperationCounters" />
 			<channel-group id="nominalValues" typeId="channelGroupTypeNominalValues" />
-			<!-- <channel-group id="tecalorDebug" typeId="tecalorDebugGroup" /> -->
+			<channel-group id="tecalorDebug" typeId="tecalorDebugGroup" />
 		</channel-groups>
 		<properties>
 			<property name="vendor">Tecalor</property>
