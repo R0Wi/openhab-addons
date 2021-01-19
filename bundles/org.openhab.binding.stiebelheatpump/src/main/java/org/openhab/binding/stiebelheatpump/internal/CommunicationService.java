@@ -281,12 +281,12 @@ public class CommunicationService {
             response = parser.fixDuplicatedBytes(response);
             Object currentValue = parser.parseRecord(response, updateRecord);
 
-            // create new set request created from the existing read response
-            byte[] requestUpdateMessage = parser.composeRecord(currentValue, newValue, response, updateRecord);
             if (Arrays.equals(requestMessage, response)) {
                 logger.debug("Current value for {} is already {}.", channelId, newValue);
                 return data;
             }
+            // create new set request created from the existing read response
+            byte[] requestUpdateMessage = parser.composeRecord(currentValue, newValue, response, updateRecord);
 
             logger.debug("Setting new value [{}] for parameter [{}]", newValue, channelId);
 
@@ -341,11 +341,11 @@ public class CommunicationService {
      *         interface of heat pump
      *
      *         1. Sending request bytes ,
-     *         e.g.: 01 00 FD FC 10 03 for version request
+     *         e.g.: 01 00 FE FD 10 03 for version request
      *         01 -> header start
      *         00 -> get request
-     *         FD -> checksum of request
-     *         FC -> request byte
+     *         FE -> checksum of request
+     *         FD -> request byte
      *         10 03 -> Footer ending the communication
      *
      *         2. Receive a data available
@@ -538,7 +538,7 @@ public class CommunicationService {
      *            message
      * @return request message byte[]
      */
-    private byte[] createRequestMessage(byte[] requestytes) {
+    protected byte[] createRequestMessage(byte[] requestytes) {
         short checkSum;
         byte[] requestMessage = concat(new byte[] { DataParser.HEADERSTART, DataParser.GET, (byte) 0x00 }, requestytes,
                 new byte[] { DataParser.ESCAPE, DataParser.END });
