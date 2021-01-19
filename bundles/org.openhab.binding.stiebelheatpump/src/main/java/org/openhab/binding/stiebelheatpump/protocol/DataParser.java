@@ -179,7 +179,9 @@ public class DataParser {
         if (newValue instanceof Boolean) {
             Boolean currentValueBoolean = (Boolean) currentValue;
             Boolean newValueBoolean = (Boolean) newValue;
-            if (currentValueBoolean.equals(newValueBoolean)) {
+            if (currentValueBoolean.equals(newValueBoolean)) { // TODO: Stefan: if that is the case, the
+                                                               // CommunicationService#writeData will return already
+                                                               // before even calling us
                 return response;
             }
             // set new bit values in a byte, this a valid for switch setting change
