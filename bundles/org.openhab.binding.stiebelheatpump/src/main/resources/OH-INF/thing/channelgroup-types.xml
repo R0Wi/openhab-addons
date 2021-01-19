@@ -901,20 +901,4 @@
             </channel> 
 		</channels>
 	</channel-group-type>
-	<!-- Stefan -->
-    <channel-group-type id="tecalorDebugGroup">
-        <label>Tecalor Debug Group</label>
-        <description>Tecalor Debug Group for testing new features</description>
-        <channels>
-            <channel id="fanStageDay" typeId="tecalorFanStage">             
-                <label>Fan Stage Day</label>
-                <description>Stage of the fan from 0-3 by day</description>        
-            </channel>
-            <channel id="fanStageNight" typeId="tecalorFanStage">               
-                <label>Fan Stage Night</label>
-                <description>Stage of the fan from 0-3 by night</description>        
-            </channel>
-        </channels>
-    </channel-group-type> 
-    <!-- End-Stefan -->
 </thing:thing-descriptions>

@@ -14,6 +14,7 @@ package org.openhab.binding.stiebelheatpump.protocol;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,14 +26,13 @@ import org.slf4j.LoggerFactory;
  */
 public class Requests {
     private Logger logger = LoggerFactory.getLogger(Requests.class);
-    private List<Request> requestList;
+    private List<Request> requestList = new CopyOnWriteArrayList<Request>();
 
     public Requests() {
-        requestList = new ArrayList<>();
     }
 
     public Requests(List<Request> requests) {
-        this.requestList = requests;
+        this.requestList.addAll(requests);
     }
 
     public List<Request> getRequests() {
@@ -40,7 +40,8 @@ public class Requests {
     }
 
     public void setRequests(List<Request> requests) {
-        this.requestList = requests;
+        this.requestList.clear();
+        this.requestList.addAll(requests);
     }
 
     public static <T> List<T> searchIn(List<T> list, Matcher<T> m) {
