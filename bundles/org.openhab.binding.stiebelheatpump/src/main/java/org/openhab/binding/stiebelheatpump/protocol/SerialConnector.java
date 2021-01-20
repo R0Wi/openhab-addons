@@ -15,6 +15,7 @@ package org.openhab.binding.stiebelheatpump.protocol;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.stream.Stream;
 
 import org.eclipse.jdt.annotation.NonNull;
@@ -43,6 +44,11 @@ public class SerialConnector implements ProtocolConnector {
     ByteStreamPipe byteStreamPipe = null;
 
     private CircularByteBuffer buffer;
+    private ScheduledExecutorService scheduler;
+
+    public SerialConnector(ScheduledExecutorService scheduler) {
+        this.scheduler = scheduler;
+    }
 
     @Override
     public void connect(SerialPortManager portManager, String device, int baudrate) throws StiebelHeatPumpException {
@@ -58,7 +64,7 @@ public class SerialConnector implements ProtocolConnector {
             out.flush();
 
             buffer = new CircularByteBuffer(Byte.MAX_VALUE * Byte.MAX_VALUE + 2 * Byte.MAX_VALUE);
-            byteStreamPipe = new ByteStreamPipe(in, buffer);
+            byteStreamPipe = new ByteStreamPipe(in, buffer, scheduler);
             byteStreamPipe.startTask();
 
         } catch (IOException e) {
@@ -89,6 +95,7 @@ public class SerialConnector implements ProtocolConnector {
         } catch (IOException e) {
             logger.warn("Could not fully shut down heat pump driver", e);
         }
+        this.scheduler = null;
 
         logger.debug("Disconnected");
     }

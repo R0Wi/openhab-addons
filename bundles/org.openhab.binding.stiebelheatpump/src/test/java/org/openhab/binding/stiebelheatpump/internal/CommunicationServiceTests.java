@@ -39,7 +39,7 @@ public class CommunicationServiceTests {
     public void test() throws Exception {
         mockSerialPort();
 
-        CommunicationService cs = new CommunicationService(serialPortManager, "", 9600, 1);
+        CommunicationService cs = new CommunicationService(serialPortManager, "", 9600, 1000, null);
         // cs.setConnector(mockSerialConnector());
         // cs.connect();
 

@@ -17,13 +17,14 @@ import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.format.ResolverStyle;
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
 
 import javax.measure.quantity.Dimensionless;
@@ -51,7 +52,6 @@ import org.openhab.core.thing.ThingStatus;
 import org.openhab.core.thing.ThingStatusDetail;
 import org.openhab.core.thing.binding.BaseThingHandler;
 import org.openhab.core.thing.type.ChannelTypeUID;
-import org.openhab.core.thing.type.ThingType;
 import org.openhab.core.types.Command;
 import org.openhab.core.types.RefreshType;
 import org.slf4j.Logger;
@@ -71,34 +71,25 @@ public class StiebelHeatPumpHandler extends BaseThingHandler {
     private final SerialPortManager serialPortManager;
     private StiebelHeatPumpConfiguration config;
     CommunicationService communicationService;
-    boolean communicationInUse = false;
+    volatile AtomicBoolean communicationInUse = new AtomicBoolean(false);
 
     /** heat pump request definition */
     private Requests heatPumpConfiguration = new Requests();
-    private Requests heatPumpSensorConfiguration = new Requests();
-    private Requests heatPumpSettingConfiguration = new Requests();
-    private Requests heatPumpStatusConfiguration = new Requests();
-    private Requests heatPumpSensorStatusRefresh = new Requests();
-    private Requests heatPumpSettingRefresh = new Requests();
     private Request versionRequest;
     private Request timeRequest;
 
     private Requests scheduledRequests = new Requests();
 
     /** cyclic pooling of sensor/status data from heat pump */
-    ScheduledFuture<?> refreshSensorStatusJob;
-    /** cyclic pooling of setting data from heat pump */
-    ScheduledFuture<?> refreshSettingJob;
+    ScheduledFuture<?> communicateWithHeatPumpJob;
+
     /** cyclic update of time in the heat pump */
     ScheduledFuture<?> timeRefreshJob;
 
     ScheduledFuture<?> retryOpenPortJob;
 
-    private ThingType thingType;
-
-    public StiebelHeatPumpHandler(Thing thing, ThingType thingType, final SerialPortManager serialPortManager) {
+    public StiebelHeatPumpHandler(Thing thing, final SerialPortManager serialPortManager) {
         super(thing);
-        this.thingType = thingType;
         this.serialPortManager = serialPortManager;
     }
 
@@ -111,20 +102,20 @@ public class StiebelHeatPumpHandler extends BaseThingHandler {
         logger.debug("Received command {} for channelUID {}", command, channelUID);
         String channelId = channelUID.getId();
         int retry = 0;
-        while (communicationInUse & (retry < MAXRETRY)) {
+
+        while (communicationInUse.get() & (retry < MAXRETRY)) {
             try {
                 Thread.sleep(config.waitingTime);
             } catch (InterruptedException e) {
                 logger.debug("Could not get access to heatpump, communication is in use {} !", retry);
-                e.printStackTrace();
             }
             retry++;
         }
-        if (communicationInUse) {
+        if (communicationInUse.get()) {
             logger.debug("Could not get access to heatpump, communication is in use ! Final");
             return;
         }
-        communicationInUse = true;
+        communicationInUse.set(true);
         try {
             Map<String, Object> data = new HashMap<>();
             switch (channelUID.getId()) {
@@ -197,39 +188,13 @@ public class StiebelHeatPumpHandler extends BaseThingHandler {
             logger.debug("Exception occurred during execution: {}", e.getMessage(), e);
             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.OFFLINE.COMMUNICATION_ERROR, e.getMessage());
         } finally {
-            communicationInUse = false;
+            communicationInUse.set(false);
         }
     }
 
     @Override
     public void channelLinked(ChannelUID channelUID) {
-        String channelId = channelUID.getId();
-        Request request = heatPumpConfiguration.getRequestByChannelId(channelId);
-        if (request == null) {
-            logger.debug("Could not find valid record definitionrequest in channel for: {}", channelId);
-            return;
-        }
-        String requestStr = DataParser.bytesToHex(request.getRequestByte(), true);
-        logger.debug("Found valid record definition in request {} with ChannelID:{}", requestStr, channelId);
-        RecordDefinition record = request.getRecordDefinitionByChannelId(channelId);
-        if (record == null) {
-            logger.warn("Could not find valid record definition for {},  please verify thing definition.", channelId);
-            return;
-        }
-        Type dataType = record.getDataType();
-        if (dataType == RecordDefinition.Type.Settings) {
-            if (refreshSettingJob != null) {
-                getSettings(request);
-            }
-            if (!heatPumpSettingRefresh.getRequests().contains(request)) {
-                heatPumpSettingRefresh.getRequests().add(request);
-                logger.info("Request {} added to setting refresh scheduler.", requestStr);
-            }
-        }
-        if (dataType != RecordDefinition.Type.Settings
-                && !heatPumpSensorStatusRefresh.getRequests().contains(request)) {
-            heatPumpSensorStatusRefresh.getRequests().add(request);
-        }
+        scheduleRequestForChannel(channelUID, true);
     }
 
     @Override
@@ -240,33 +205,8 @@ public class StiebelHeatPumpHandler extends BaseThingHandler {
             logger.debug("No Request found for channelid {} !", channelId);
             return;
         }
-        String requestStr = DataParser.bytesToHex(request.getRequestByte(), true);
-        List<Channel> channels = getThing().getChannels();
-        Boolean toBeRemoved = false;
-        for (Channel channel : channels) {
-            if (this.isLinked(channel.getUID())) {
-                String channelSearch = channelUID.getId();
-                if (channelSearch.equals(channelId)) {
-                    toBeRemoved = true;
-                    continue;
-                }
-                if (request.getRecordDefinitionByChannelId(channelId) != null) {
-                    toBeRemoved = false;
-                    break;
-                }
-            }
-        }
-        if (toBeRemoved) {
-            // no channel found which belongs to same request, remove request
-            if (heatPumpSettingRefresh.getRequests().remove(request)) {
-                logger.debug(
-                        "Request {} removed in setting refresh list because no additional channel from request linked",
-                        requestStr);
-            } else if (heatPumpSensorStatusRefresh.getRequests().remove(request)) {
-                logger.debug(
-                        "Request {} removed in sensor/status refresh list because no additional channel from request linked",
-                        requestStr);
-            }
+        if (scheduledRequests.getRequests().contains(request)) {
+            scheduledRequests.getRequests().remove(request);
         }
     }
 
@@ -274,7 +214,7 @@ public class StiebelHeatPumpHandler extends BaseThingHandler {
     public void initialize() {
         if (heatPumpConfiguration.getRequests().isEmpty()) {
             // get the records from the thing-type configuration file
-            String configFile = thingType.getUID().getId();
+            String configFile = getThing().getThingTypeUID().getId();
             ConfigLocator configLocator = new ConfigLocator(configFile + ".xml");
             heatPumpConfiguration.setRequests(configLocator.getRequests());
         }
@@ -300,7 +240,7 @@ public class StiebelHeatPumpHandler extends BaseThingHandler {
         }
 
         communicationService = new CommunicationService(serialPortManager, config.port, config.baudRate,
-                config.waitingTime);
+                config.waitingTime, scheduler);
 
         scheduler.schedule(this::getInitialHeatPumpSettings, 0, TimeUnit.SECONDS);
         updateStatus(ThingStatus.UNKNOWN, ThingStatusDetail.HANDLER_CONFIGURATION_PENDING,
@@ -309,15 +249,6 @@ public class StiebelHeatPumpHandler extends BaseThingHandler {
 
     @Override
     public void dispose() {
-        if (refreshSettingJob != null && !refreshSettingJob.isCancelled()) {
-            refreshSettingJob.cancel(true);
-        }
-        refreshSettingJob = null;
-
-        if (refreshSensorStatusJob != null && !refreshSensorStatusJob.isCancelled()) {
-            refreshSensorStatusJob.cancel(true);
-        }
-        refreshSensorStatusJob = null;
 
         if (timeRefreshJob != null && !timeRefreshJob.isCancelled()) {
             timeRefreshJob.cancel(true);
@@ -329,10 +260,15 @@ public class StiebelHeatPumpHandler extends BaseThingHandler {
         }
         retryOpenPortJob = null;
 
+        if (communicateWithHeatPumpJob != null && !communicateWithHeatPumpJob.isCancelled()) {
+            communicateWithHeatPumpJob.cancel(true);
+        }
+        communicateWithHeatPumpJob = null;
+
         if (communicationService != null) {
             communicationService.disconnect();
         }
-        communicationInUse = false;
+        communicationInUse.set(false);
     }
 
     private boolean validateConfiguration(StiebelHeatPumpConfiguration config) {
@@ -363,133 +299,6 @@ public class StiebelHeatPumpHandler extends BaseThingHandler {
     }
 
     /**
-     * This method pools the heat pump sensor/status data and updates the channels on a scheduler
-     * once per refresh time defined in the thing properties
-     */
-    private void startAutomaticSensorStatusRefresh() {
-        refreshSensorStatusJob = scheduler.scheduleWithFixedDelay(() -> {
-            Map<String, Object> data = new HashMap<>();
-            Instant start = Instant.now();
-            if (heatPumpSensorStatusRefresh.getRequests().isEmpty()) {
-                logger.debug("nothing to update, sensor/status refresh list is empty");
-                return;
-            }
-
-            if (communicationInUse) {
-                logger.debug("Communication service is in use , skip refresh data task this time.");
-                return;
-            }
-            communicationInUse = true;
-            logger.debug("Refresh sensor/status data of heat pump.");
-            try {
-                data = communicationService.getRequestData(heatPumpSensorStatusRefresh.getRequests());
-            } catch (Exception e) {
-                logger.debug("Exception occurred during execution: {}", e.getMessage(), e);
-                updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.OFFLINE.COMMUNICATION_ERROR, e.getMessage());
-            } finally {
-                communicationInUse = false;
-            }
-            Instant end = Instant.now();
-            logger.debug("Sensor/Status refresh took {} seconds.", Duration.between(start, end).getSeconds());
-            updateChannels(data);
-
-        }, 10, config.refresh, TimeUnit.SECONDS);
-    }
-
-    /**
-     * This method pools the heat pump setting data and updates the channels on a scheduler
-     */
-    private void startAutomaticSettingRefresh() {
-        refreshSettingJob = scheduler.scheduleWithFixedDelay(() -> {
-            Map<String, Object> data = new HashMap<>();
-            Instant start = Instant.now();
-            if (heatPumpSettingRefresh.getRequests().isEmpty()) {
-                logger.debug("nothing to update, setting refresh list is empty");
-                return;
-            }
-
-            if (communicationInUse) {
-                logger.debug("Communication service is in use , skip refresh data task this time.");
-                return;
-            }
-            communicationInUse = true;
-            logger.info("Refresh setting data of heat pump.");
-            try {
-                data = communicationService.getRequestData(heatPumpSettingRefresh.getRequests());
-            } catch (Exception e) {
-                logger.debug("Exception occurred during execution: {}", e.getMessage(), e);
-                updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.OFFLINE.COMMUNICATION_ERROR, e.getMessage());
-            } finally {
-                communicationInUse = false;
-            }
-            Instant end = Instant.now();
-            logger.debug("Setting refresh took {} seconds.", Duration.between(start, end).getSeconds());
-            updateChannels(data);
-        }, 2, 3600, TimeUnit.SECONDS);
-    }
-
-    /**
-     * This method pools the heat pump setting data for one request and updates the channels on a scheduler
-     */
-    private void getSettings(Request request) {
-        refreshSettingJob = scheduler.schedule(() -> {
-            int count = 0;
-            int maxtry = 10;
-            while (count < maxtry && communicationInUse) {
-                try {
-                    Thread.sleep(2000);
-
-                } catch (InterruptedException e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
-                }
-                count++;
-            }
-            if (maxtry == 10) {
-                logger.error("Setting could not be read from heatpump.communication is used by other task!");
-            }
-            Map<String, Object> data = new HashMap<>();
-            communicationInUse = true;
-            List<Request> requestList = new ArrayList<>();
-            requestList.add(request);
-
-            logger.info("Refresh for newly linked setting of heat pump.");
-            try {
-                data = communicationService.getRequestData(requestList);
-            } catch (
-
-            Exception e) {
-                logger.debug("Exception occurred during execution: {}", e.getMessage(), e);
-            } finally {
-                communicationInUse = false;
-            }
-            updateChannels(data);
-        }, 0, TimeUnit.SECONDS);
-    }
-
-    /**
-     * This method set the time in the heat pump to system time on a scheduler
-     * once a week
-     */
-    private void startTimeRefresh() {
-        timeRefreshJob = scheduler.scheduleWithFixedDelay(() -> {
-            if (communicationInUse) {
-                return;
-            }
-            communicationInUse = true;
-            logger.info("Refresh time of heat pump.");
-            try {
-                Map<String, Object> time = communicationService.setTime(timeRequest);
-                updateChannels(time);
-            } catch (StiebelHeatPumpException e) {
-                logger.debug(e.getMessage());
-            } finally {
-                communicationInUse = false;
-            }
-        }, 1, 7, TimeUnit.DAYS);
-    }
-
-    /**
      * This method reads initial information from the heat pump. It reads
      * the configuration file and loads all defined record definitions of sensor
      * data, status information , actual time settings and setting parameter
@@ -498,7 +307,7 @@ public class StiebelHeatPumpHandler extends BaseThingHandler {
      * @return true if heat pump information could be successfully connected and read
      */
     private void getInitialHeatPumpSettings() {
-        String thingFirmwareVersion = thingType.getProperties().get(Thing.PROPERTY_FIRMWARE_VERSION);
+        String thingFirmwareVersion = getThing().getProperties().get(Thing.PROPERTY_FIRMWARE_VERSION);
 
         // get version information from the heat pump
         communicationService.connect();
@@ -519,9 +328,69 @@ public class StiebelHeatPumpHandler extends BaseThingHandler {
         }
 
         updateStatus(ThingStatus.ONLINE);
+        startHeatpumpCommunication();
         startTimeRefresh();
-        startAutomaticSettingRefresh();
-        startAutomaticSensorStatusRefresh();
+    }
+
+    private void startHeatpumpCommunication() {
+        communicateWithHeatPumpJob = scheduler.scheduleWithFixedDelay(() -> {
+            Instant start = Instant.now();
+            if (scheduledRequests.getRequests().isEmpty()) {
+                logger.debug("nothing to update, refresh list is empty");
+                return;
+            }
+
+            if (communicationInUse.get()) {
+                logger.debug("Communication service is in use , skip refresh data task this time.");
+                return;
+            }
+
+            Map<String, Object> data = sendRequests(scheduledRequests.getRequests());
+
+            Instant end = Instant.now();
+            logger.debug("Data refresh took {} seconds.", Duration.between(start, end).getSeconds());
+            updateChannels(data);
+
+        }, 10, config.refresh, TimeUnit.SECONDS);
+    }
+
+    private Map<String, Object> sendRequests(List<Request> requests) {
+        Map<String, Object> data = new HashMap<>();
+        communicationInUse.set(true);
+        logger.debug("Refresh data of heat pump.");
+        try {
+            data = communicationService.getRequestData(requests);
+        } catch (Exception e) {
+            logger.debug("Exception occurred during execution: {}", e.getMessage(), e);
+            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.OFFLINE.COMMUNICATION_ERROR, e.getMessage());
+        } finally {
+            communicationInUse.set(false);
+        }
+        return data;
+    }
+
+    /**
+     * This method set the time in the heat pump to system time on a scheduler
+     * once a week
+     */
+    private void startTimeRefresh() {
+        timeRefreshJob = scheduler.scheduleWithFixedDelay(() -> {
+            if (communicationInUse.get()) {
+                return;
+            }
+            communicationInUse.set(true);
+            logger.debug("Refresh time of heat pump.");
+            try {
+                communicationService.connect();
+                Map<String, Object> time = communicationService.setTime(timeRequest);
+                updateChannels(time);
+            } catch (StiebelHeatPumpException e) {
+                logger.debug(e.getMessage());
+            } finally {
+                communicationService.disconnect();
+                communicationInUse.set(false);
+            }
+        }, 1, 7, TimeUnit.DAYS);
     }
 
     /**
@@ -665,28 +534,6 @@ public class StiebelHeatPumpHandler extends BaseThingHandler {
                 timeRequest = request;
                 logger.debug("set time request : {}", requestStr);
             }
-
-            // group requests in different categories by investigating data type in first record
-            RecordDefinition record = request.getRecordDefinitions().get(0);
-            switch (record.getDataType()) {
-                case Settings:
-                    if (!heatPumpSettingConfiguration.getRequests().contains(request)) {
-                        heatPumpSettingConfiguration.getRequests().add(request);
-                    }
-                    break;
-                case Status:
-                    if (!heatPumpStatusConfiguration.getRequests().contains(request)) {
-                        heatPumpStatusConfiguration.getRequests().add(request);
-                    }
-                    break;
-                case Sensor:
-                    if (!heatPumpSensorConfiguration.getRequests().contains(request)) {
-                        heatPumpSensorConfiguration.getRequests().add(request);
-                    }
-                    break;
-                default:
-                    break;
-            }
         }
         if (versionRequest == null || timeRequest == null) {
             logger.debug("version or time request could not be found in configuration");
@@ -701,28 +548,46 @@ public class StiebelHeatPumpHandler extends BaseThingHandler {
             String[] parts = channelUID.getId()
                     .split(Pattern.quote(StiebelHeatPumpBindingConstants.CHANNELGROUPSEPERATOR));
             String channelId = parts[parts.length - 1];
+
             Request request = heatPumpConfiguration.getRequestByChannelId(channelId);
             if (request != null) {
-                String requestStr = DataParser.bytesToHex(request.getRequestByte());
+                // String requestStr = DataParser.bytesToHex(request.getRequestByte());
                 RecordDefinition record = request.getRecordDefinitionByChannelId(channelId);
                 if (record == null) {
-                    logger.warn("Could not find valid record definition for {},  please verify thing definition.",
+                    logger.warn("Could not find valid record definition for {}, please verify thing definition.",
                             channelId);
-                    return;
-                }
-                record.setChannelid(channelUID.getId());
-                if (!this.isLinked(channelUID)) {
                     continue;
                 }
-                if (record.getDataType() == Type.Settings && !heatPumpSettingRefresh.getRequests().contains(request)) {
-                    heatPumpSettingRefresh.getRequests().add(request);
-                    logger.info("Request {} added to setting refresh scheduler.", requestStr);
-                }
-                if (record.getDataType() != Type.Settings
-                        && !heatPumpSensorStatusRefresh.getRequests().contains(request)) {
-                    heatPumpSensorStatusRefresh.getRequests().add(request);
-                    logger.info("Request {} added to sensor/status refresh scheduler.", requestStr);
-                }
+                // rewrite channel IDs to include channel groups
+                record.setChannelid(channelUID.getId());
+            }
+
+            if (isLinked(channelUID)) {
+                scheduleRequestForChannel(channelUID, false);
+            }
+        }
+    }
+
+    private void scheduleRequestForChannel(ChannelUID channelUID, boolean refreshNow) {
+        Request request = heatPumpConfiguration.getRequestByChannelId(channelUID.getId());
+        if (request != null) {
+            String requestStr = DataParser.bytesToHex(request.getRequestByte());
+            RecordDefinition record = request.getRecordDefinitionByChannelId(channelUID.getId());
+            if (record == null) {
+                logger.warn("Could not find valid record definition for {},  please verify thing definition.",
+                        channelUID.getId());
+                return;
+            }
+
+            if (!scheduledRequests.getRequests().contains(request)) {
+                scheduledRequests.getRequests().add(request);
+                logger.debug("Request {} added to sensor/status refresh scheduler.", requestStr);
+            }
+
+            if (refreshNow) {
+                List<Request> requestList = Collections.singletonList(request);
+                Map<String, Object> data = sendRequests(requestList);
+                updateChannels(data);
             }
         }
     }

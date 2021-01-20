@@ -19,7 +19,6 @@ import org.openhab.core.thing.ThingTypeUID;
 import org.openhab.core.thing.binding.BaseThingHandlerFactory;
 import org.openhab.core.thing.binding.ThingHandler;
 import org.openhab.core.thing.binding.ThingHandlerFactory;
-import org.openhab.core.thing.type.ThingType;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
@@ -32,7 +31,7 @@ import org.osgi.service.component.annotations.Reference;
 @Component(configurationPid = "binding.stiebelheatpump", service = ThingHandlerFactory.class)
 public class StiebelHeatPumpHandlerFactory extends BaseThingHandlerFactory {
 
-    private static final Set<ThingTypeUID> SUPPORTED_THING_TYPES_UIDS = new HashSet<ThingTypeUID>() {
+    private static final Set<ThingTypeUID> SUPPORTED_THING_TYPES_UIDS = new HashSet<>() {
         {
             add(THING_TYPE_LWZ206);
             add(THING_TYPE_LWZ236);
@@ -55,10 +54,9 @@ public class StiebelHeatPumpHandlerFactory extends BaseThingHandlerFactory {
     @Override
     protected ThingHandler createHandler(Thing thing) {
         ThingTypeUID thingTypeUID = thing.getThingTypeUID();
-        ThingType thingType = getThingTypeByUID(thing.getThingTypeUID());
 
         if (supportsThingType(thingTypeUID)) {
-            return new StiebelHeatPumpHandler(thing, thingType, serialPortManager);
+            return new StiebelHeatPumpHandler(thing, serialPortManager);
         }
 
         return null;
