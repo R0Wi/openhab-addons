@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ScheduledExecutorService;
 
 import org.openhab.binding.stiebelheatpump.protocol.DataParser;
 import org.openhab.binding.stiebelheatpump.protocol.ProtocolConnector;
@@ -48,12 +49,12 @@ public class CommunicationService {
     private int waitingTime = 1200;
 
     public CommunicationService(SerialPortManager serialPortManager, String serialPortName, int baudRate,
-            int waitingTime) {
+            int waitingTime, ScheduledExecutorService scheduler) {
         this.waitingTime = waitingTime;
         this.baudRate = baudRate;
         this.serialPortName = serialPortName;
         this.serialPortManager = serialPortManager;
-        this.connector = new SerialConnector();
+        this.connector = new SerialConnector(scheduler);
     }
 
     public void finalizer() {
