@@ -14,7 +14,6 @@ package org.openhab.binding.stiebelheatpump.internal;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.net.URL;
 
 import org.slf4j.Logger;
@@ -33,12 +32,7 @@ public class ConfigParser {
 
     private static final Logger logger = LoggerFactory.getLogger(ConfigParser.class);
 
-    private final XStream xstream;
-
     public ConfigParser() {
-        // this.xstream = new XStream();
-        this.xstream = new XStream(new StaxDriver());
-
     }
 
     /**
@@ -62,7 +56,7 @@ public class ConfigParser {
         try {
             InputStream x = configFile.openStream();
             // creating an InputStreamReader object
-            InputStreamReader isReader = new InputStreamReader(x);
+            // InputStreamReader isReader = new InputStreamReader(x);
             records = (Records) xstream.fromXML(x);
 
             if (records == null) {
