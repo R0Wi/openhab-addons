@@ -51,7 +51,7 @@ public class CircularByteBuffer {
 
     public byte get() throws StiebelHeatPumpException {
         if (!waitForData()) {
-            throw new StiebelHeatPumpException("no data availabel!");
+            throw new StiebelHeatPumpException("no data available!");
         }
         byte result;
         synchronized (buffer) {
