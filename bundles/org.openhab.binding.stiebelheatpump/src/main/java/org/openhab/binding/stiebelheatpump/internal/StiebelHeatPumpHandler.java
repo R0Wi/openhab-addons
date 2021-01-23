@@ -349,7 +349,6 @@ public class StiebelHeatPumpHandler extends BaseThingHandler {
 
             Instant end = Instant.now();
             logger.debug("Data refresh took {} seconds.", Duration.between(start, end).getSeconds());
-            updateChannels(data);
 
         }, 10, config.refresh, TimeUnit.SECONDS);
     }
@@ -360,6 +359,8 @@ public class StiebelHeatPumpHandler extends BaseThingHandler {
         logger.debug("Refresh data of heat pump.");
         try {
             data = communicationService.getRequestData(requests);
+            // do the channel update immediately within the communicationInUse guard to avoid clashing TODO
+            updateChannels(data);
         } catch (Exception e) {
             logger.debug("Exception occurred during execution: {}", e.getMessage(), e);
             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.OFFLINE.COMMUNICATION_ERROR, e.getMessage());
