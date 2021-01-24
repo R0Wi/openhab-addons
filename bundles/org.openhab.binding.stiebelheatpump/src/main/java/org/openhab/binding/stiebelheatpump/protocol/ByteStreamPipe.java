@@ -69,8 +69,10 @@ public class ByteStreamPipe implements Runnable {
         try {
             taskThread.join();
         } catch (InterruptedException ex) {
-            ex.printStackTrace();
-            System.exit(1);
+            logger.warn("Stoppping serial thread was interrupted");
+            Thread.currentThread().interrupt();
+            // ex.printStackTrace();
+            // System.exit(1);
         }
     }
 
@@ -84,6 +86,9 @@ public class ByteStreamPipe implements Runnable {
                     buffer.put(readByte);
                 }
                 Thread.sleep(3);
+            } catch (InterruptedException e) {
+                logger.warn("Read from serial thread was interrupted");
+                Thread.currentThread().interrupt();
             } catch (Exception e) {
                 logger.error("Error while reading from COM port. Stopping.", e);
                 throw new RuntimeException(e);
