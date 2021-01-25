@@ -14,7 +14,6 @@ package org.openhab.binding.stiebelheatpump.protocol;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 
 import org.slf4j.Logger;
@@ -34,13 +33,13 @@ public class ByteStreamPipe implements Runnable {
     private CircularByteBuffer buffer;
     private Thread taskThread;
 
-    private ScheduledExecutorService scheduler;
-    private Future<?> readJob;
+    // private ScheduledExecutorService scheduler;
+    // private Future<?> readJob;
 
     public ByteStreamPipe(InputStream in, CircularByteBuffer buffer, ScheduledExecutorService scheduler) {
         this.in = in;
         this.buffer = buffer;
-        this.scheduler = scheduler;
+        // this.scheduler = scheduler;
     }
 
     // public void startTask() {
@@ -91,7 +90,7 @@ public class ByteStreamPipe implements Runnable {
                 Thread.currentThread().interrupt();
             } catch (Exception e) {
                 logger.error("Error while reading from COM port. Stopping.", e);
-                throw new RuntimeException(e);
+                // throw new RuntimeException(e);
             }
         }
     }
