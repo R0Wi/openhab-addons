@@ -382,13 +382,11 @@ public class StiebelHeatPumpHandler extends BaseThingHandler {
             communicationInUse.set(true);
             logger.debug("Refresh time of heat pump.");
             try {
-                communicationService.connect();
                 Map<String, Object> time = communicationService.setTime(timeRequest);
                 updateChannels(time);
             } catch (StiebelHeatPumpException e) {
                 logger.debug(e.getMessage());
             } finally {
-                communicationService.disconnect();
                 communicationInUse.set(false);
             }
         }, 1, 7, TimeUnit.DAYS);
