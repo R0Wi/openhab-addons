@@ -147,7 +147,8 @@ public class StiebelHeatPumpHandler extends BaseThingHandler {
                     logger.debug("Dump responds for request byte {} !", requestStr);
                     String respondStr = communicationService.dumpRequest(debugBytes);
                     updateRespondChannel(respondStr);
-                    updateState(channelUID, new StringType(requestStr));
+                    logger.debug("Response from heatpump: {}", respondStr);
+                    // updateState(channelUID, new StringType(requestStr));
                     break;
                 default:
                     // do checks if valid definition is available
