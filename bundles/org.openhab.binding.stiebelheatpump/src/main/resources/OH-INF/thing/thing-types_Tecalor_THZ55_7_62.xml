@@ -16,6 +16,8 @@
 			<channel-group id="currentValues" typeId="channelGroupTypeCurrentValues" />
 			<channel-group id="operationCounters" typeId="channelGroupTypeOperationCounters" />
 			<channel-group id="nominalValues" typeId="channelGroupTypeNominalValues" />
+			<channel-group id="ventilation" typeId="channelGroupTypeVentilation" />
+			<!--<channel-group id="heating" typeId="channelGroupTypeHeating /> TODO: continue here--> 
 		</channel-groups>
 		<properties>
 			<property name="vendor">Tecalor</property>
