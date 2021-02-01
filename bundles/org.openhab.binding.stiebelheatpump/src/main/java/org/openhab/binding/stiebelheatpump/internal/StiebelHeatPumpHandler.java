@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Pattern;
 
 import javax.measure.quantity.Dimensionless;
@@ -71,7 +71,8 @@ public class StiebelHeatPumpHandler extends BaseThingHandler {
     private final SerialPortManager serialPortManager;
     private StiebelHeatPumpConfiguration config;
     CommunicationService communicationService;
-    volatile AtomicBoolean communicationInUse = new AtomicBoolean(false);
+    // volatile AtomicBoolean communicationInUse = new AtomicBoolean(false);
+    private ReentrantLock communicationInUse = new ReentrantLock();
 
     /** heat pump request definition */
     private Requests heatPumpConfiguration = new Requests();
@@ -101,21 +102,23 @@ public class StiebelHeatPumpHandler extends BaseThingHandler {
         }
         logger.debug("Received command {} for channelUID {}", command, channelUID);
         String channelId = channelUID.getId();
-        int retry = 0;
+        // int retry = 0;
+        //
+        // while (communicationInUse.get() & (retry < MAXRETRY)) {
+        // try {
+        // Thread.sleep(config.waitingTime);
+        // } catch (InterruptedException e) {
+        // logger.debug("Could not get access to heatpump, communication is in use {} !", retry);
+        // }
+        // retry++;
+        // }
+        // if (communicationInUse.get()) {
+        // logger.debug("Could not get access to heatpump, communication is in use ! Final");
+        // return;
+        // }
+        // communicationInUse.set(true);
+        communicationInUse.lock();
 
-        while (communicationInUse.get() & (retry < MAXRETRY)) {
-            try {
-                Thread.sleep(config.waitingTime);
-            } catch (InterruptedException e) {
-                logger.debug("Could not get access to heatpump, communication is in use {} !", retry);
-            }
-            retry++;
-        }
-        if (communicationInUse.get()) {
-            logger.debug("Could not get access to heatpump, communication is in use ! Final");
-            return;
-        }
-        communicationInUse.set(true);
         try {
             Map<String, Object> data = new HashMap<>();
             switch (channelUID.getId()) {
@@ -188,7 +191,8 @@ public class StiebelHeatPumpHandler extends BaseThingHandler {
             logger.debug("Exception occurred during execution: {}", e.getMessage(), e);
             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.OFFLINE.COMMUNICATION_ERROR, e.getMessage());
         } finally {
-            communicationInUse.set(false);
+            // communicationInUse.set(false);
+            communicationInUse.unlock();
         }
     }
 
@@ -268,7 +272,10 @@ public class StiebelHeatPumpHandler extends BaseThingHandler {
         if (communicationService != null) {
             communicationService.disconnect();
         }
-        communicationInUse.set(false);
+        // communicationInUse.set(false);
+        if (communicationInUse.isLocked()) {
+            communicationInUse.unlock();
+        }
     }
 
     private boolean validateConfiguration(StiebelHeatPumpConfiguration config) {
@@ -340,11 +347,10 @@ public class StiebelHeatPumpHandler extends BaseThingHandler {
                 return;
             }
 
-            if (communicationInUse.get()) {
-                logger.debug("Communication service is in use , skip refresh data task this time.");
-                return;
-            }
-
+            // if (communicationInUse.get()) {
+            // logger.debug("Communication service is in use , skip refresh data task this time.");
+            // return;
+            // }
             Map<String, Object> data = sendRequests(scheduledRequests.getRequests());
 
             Instant end = Instant.now();
@@ -355,7 +361,8 @@ public class StiebelHeatPumpHandler extends BaseThingHandler {
 
     private Map<String, Object> sendRequests(List<Request> requests) {
         Map<String, Object> data = new HashMap<>();
-        communicationInUse.set(true);
+        // communicationInUse.set(true);
+        communicationInUse.lock();
         logger.debug("Refresh data of heat pump.");
         try {
             data = communicationService.getRequestData(requests);
@@ -365,7 +372,8 @@ public class StiebelHeatPumpHandler extends BaseThingHandler {
             logger.debug("Exception occurred during execution: {}", e.getMessage(), e);
             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.OFFLINE.COMMUNICATION_ERROR, e.getMessage());
         } finally {
-            communicationInUse.set(false);
+            // communicationInUse.set(false);
+            communicationInUse.unlock();
         }
         return data;
     }
@@ -376,10 +384,11 @@ public class StiebelHeatPumpHandler extends BaseThingHandler {
      */
     private void startTimeRefresh() {
         timeRefreshJob = scheduler.scheduleWithFixedDelay(() -> {
-            if (communicationInUse.get()) {
-                return;
-            }
-            communicationInUse.set(true);
+            // if (communicationInUse.get()) {
+            // return;
+            // }
+            // communicationInUse.set(true);
+            communicationInUse.lock();
             logger.debug("Refresh time of heat pump.");
             try {
                 Map<String, Object> time = communicationService.setTime(timeRequest);
@@ -387,7 +396,8 @@ public class StiebelHeatPumpHandler extends BaseThingHandler {
             } catch (StiebelHeatPumpException e) {
                 logger.debug(e.getMessage());
             } finally {
-                communicationInUse.set(false);
+                // communicationInUse.set(false);
+                communicationInUse.unlock();
             }
         }, 1, 7, TimeUnit.DAYS);
     }
