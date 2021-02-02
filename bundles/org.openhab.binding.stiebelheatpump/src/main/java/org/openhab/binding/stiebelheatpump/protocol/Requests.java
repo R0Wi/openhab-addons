@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import org.openhab.core.util.HexUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -87,7 +88,8 @@ public class Requests {
                 return request;
             }
         }
-        String requestStr = String.format("%02X", requestByte);
+        String requestStr = HexUtils.bytesToHex(requestByte);
+        // String requestStr = String.format("%02X", requestByte);
         logger.warn("Could not find valid request definition for {},  please verify thing definition.", requestStr);
         return null;
     }
