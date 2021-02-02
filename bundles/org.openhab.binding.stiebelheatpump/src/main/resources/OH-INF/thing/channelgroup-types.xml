@@ -468,13 +468,13 @@
 				<label>P55 max startup cycles</label>
 				<description>P55 max startup cycles setting</description>
 			</channel>
-			<channel id="p56OutsideTemperatureMinHeatingCycles" typeId="outsideTemperatureMinHeatingCycles">
-				<label>P56 Outside temperature min heating cycles</label>
-				<description>P56 Outside temperature min heating cycles</description>
-			</channel>
-			<channel id="p57OutsideTemperatureMaxHeatingCycles" typeId="outsideTemperatureMaxHeatingCycles">
+			<channel id="p56OutsideTemperatureMaxHeatingCycles" typeId="outsideTemperatureMaxHeatingCycles">
 				<label>P56 Outside temperature max heating cycles</label>
 				<description>P56 Outside temperature max heating cycles</description>
+			</channel>
+			<channel id="p57OutsideTemperatureMinHeatingCycles" typeId="outsideTemperatureMinHeatingCycles">
+				<label>P56 Outside temperature min heating cycles</label>
+				<description>P56 Outside temperature min heating cycles</description>
 			</channel>
 			<channel id="P58SuppressTemperatureCaptureDuringPumpStart" typeId="outsideTemperatureMinHeatingCycles">
 				<label>P58 Suppress temperature capture during pump start</label>

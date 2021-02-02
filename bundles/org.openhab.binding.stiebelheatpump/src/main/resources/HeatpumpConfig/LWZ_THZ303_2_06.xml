@@ -218,9 +218,9 @@
 		bitPosition="0" min="1" max="24" step="1.0"></record>
 	<record channelid="p55maxStartupCycles" requestByte="0A" dataType="Settings" position="5" length="2" scale="1.0"
 		bitPosition="0" min="1" max="288" step="1.0"></record>
-	<record channelid="p56OutsideTemperatureMinHeatingCycles" requestByte="0A" dataType="Settings" position="7"
+	<record channelid="p56OutsideTemperatureMaxHeatingCycles" requestByte="0A" dataType="Settings" position="7"
 		length="2" scale="0.1" bitPosition="0" min="0" max="20" step="0.1"></record>
-	<record channelid="p57OutsideTemperatureMaxHeatingCycles" requestByte="0A" dataType="Settings" position="9"
+	<record channelid="p57OutsideTemperatureMinHeatingCycles" requestByte="0A" dataType="Settings" position="9"
 		length="2" scale="0.1" bitPosition="0" min="0" max="25" step="0.1"></record>
 	<record channelid="P58SuppressTemperatureCaptureDuringPumpStart" requestByte="0A" dataType="Settings"
 		position="11" length="2" scale="1.0" bitPosition="0" min="0" max="20" step="0.1"></record>
