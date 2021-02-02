@@ -126,4 +126,104 @@
         scale="1.0" bitPosition="0" min="0" max="3" step="1.0"></record><!-- TODO: min/max -->
     <record channelid="stoveFireplaceOperation" requestByte="0A057C" dataType="Settings" position="6" length="2"
         scale="1.0" bitPosition="0" min="0" max="4" step="1.0"></record>
+    <record channelid="p13IncreaseHeatingHC1" requestByte="0B010E" dataType="Settings" position="6" length="2"
+        scale="0.1" bitPosition="0" min="1" max="5" step="0.1"></record>
+    <record channelid="p14LowEndPointHeatingHC1" requestByte="0B059E" dataType="Settings" position="6" length="2"
+        scale="0.1" bitPosition="0" min="1" max="20" step="0.1"></record>
+    <record channelid="p15RoomInfluenceHeatingHC1" requestByte="0B010F" dataType="Settings" position="6" length="2"
+        scale="1.0" bitPosition="0" min="0" max="100" step="1.0"></record>
+    <record channelid="p16IncreaseHeatingHC2" requestByte="0C010E" dataType="Settings" position="6" length="2"
+        scale="0.1" bitPosition="0" min="1" max="5" step="0.1"></record>
+    <record channelid="p17LowEndPointHeatingHC2" requestByte="0C059E" dataType="Settings" position="6" length="2"
+        scale="0.1" bitPosition="0" min="1" max="20" step="0.1"></record>
+    <record channelid="p18RoomInfluenceHeatingHC2" requestByte="0C010F" dataType="Settings" position="6" length="2"
+        scale="1.0" bitPosition="0" min="0" max="100" step="1.0"></record>
+    <record channelid="p19TemperatureCaptureReturnFlowHC1" requestByte="0B059D" dataType="Settings" position="6"
+        length="2" scale="1.0" bitPosition="0" min="1" max="100" step="1.0"></record>
+    <!--<record channelid="p20TemperatureCaptureReturnFlowHC2" requestByte="05" dataType="Settings" position="16"
+        length="1" scale="1.0" bitPosition="0" min="1" max="100" step="1.0"></record>-->
+    <!--
+    <record channelid="maxSetHeatingCircuitTemperatureHC1" requestByte="05" dataType="Settings" position="18"
+        length="2" scale="0.1" bitPosition="0" min="20" max="65" step="0.1"></record>
+    <record channelid="minSetHeatingCircuitTemperatureHC1" requestByte="05" dataType="Settings" position="20"
+        length="2" scale="0.1" bitPosition="0" min="5" max="40" step="0.1"></record>
+    <record channelid="maxSetHeatingCircuitTemperatureHC2" requestByte="05" dataType="Settings" position="22"
+        length="2" scale="0.1" bitPosition="0" min="20" max="65" step="0.1"></record>
+    <record channelid="minSetHeatingCircuitTemperatureHC2" requestByte="05" dataType="Settings" position="24"
+        length="2" scale="0.1" bitPosition="0" min="5" max="40" step="0.1"></record>
+    -->
+    <record channelid="p21HysteresisHeating1" requestByte="0A05C0" dataType="Settings" position="6" length="2"
+        scale="0.1" bitPosition="0" min="0" max="10" step="0.1"></record>
+    <record channelid="p22HysteresisHeating2" requestByte="0A05C1" dataType="Settings" position="6" length="2"
+        scale="0.1" bitPosition="0" min="0" max="10" step="0.1"></record>
+    <record channelid="p23HysteresisHeating3" requestByte="0A05C2" dataType="Settings" position="6" length="2"
+        scale="0.1" bitPosition="0" min="0" max="5" step="0.1"></record>
+    <record channelid="p24HysteresisHeating4" requestByte="0A05C3" dataType="Settings" position="6" length="2"
+        scale="0.1" bitPosition="0" min="0" max="5" step="0.1"></record>
+    <record channelid="p25HysteresisHeating5" requestByte="0A05C4" dataType="Settings" position="6" length="2"
+        scale="0.1" bitPosition="0" min="0" max="5" step="0.1"></record>
+    <!--
+    <record channelid="p26HysteresisHeating6" requestByte="06" dataType="Settings" position="9" length="1"
+        scale="0.1" bitPosition="0" min="0" max="5" step="0.1"></record>
+    <record channelid="p27HysteresisHeating7" requestByte="06" dataType="Settings" position="10" length="1"
+        scale="0.1" bitPosition="0" min="0" max="5" step="0.1"></record>
+    <record channelid="p28HysteresisHeating8" requestByte="06" dataType="Settings" position="11" length="1"
+        scale="0.1" bitPosition="0" min="0" max="5" step="0.1"></record>
+    -->
+    <record channelid="p29SwitchingHysteresisAsymmetry" requestByte="0A05C5" dataType="Settings" position="6"
+        length="2" scale="1.0" bitPosition="0" min="1" max="5" step="1.0"></record>
+    <record channelid="p30SwitchingValueIntegralPortionHeating" requestByte="0A0162" dataType="Settings" position="6"
+        length="2" scale="1.0" bitPosition="0" min="1" max="999" step="1.0"></record>
+    <!--<record channelid="p31AmountOfUnlockedElectricalBoosterStages" requestByte="06" dataType="Settings"
+        position="15" length="1" scale="1.0" bitPosition="0" min="0" max="3" step="1.0"></record>-->
+    <record channelid="maxFlowTemperatureHeatingMode" requestByte="0A0027" dataType="Settings" position="6" length="2"
+        scale="0.1" bitPosition="0" min="10" max="75" step="0.1"></record>
+    <record channelid="p49ChangeoverTemperatureSummerWinter" requestByte="0A0116" dataType="Settings" position="6"
+        length="2" scale="0.1" bitPosition="0" min="10" max="25" step="0.1"></record>
+    <record channelid="p50HysteresisChangeoverTemperatureSummerWinter" requestByte="0A05A2" dataType="Settings"
+        position="6" length="2" scale="0.1" bitPosition="0" min="1" max="5" step="0.1"></record>
+    <record channelid="p77OutsideTemperatureAdjustment" requestByte="0A010C" dataType="Settings" position="6"
+        length="1" scale="1.0" bitPosition="0" min="0" max="24" step="1.0"></record><!-- TODO: time vs K and position?-->
+    <record channelid="p78BivalencePoint" requestByte="0A01AC" dataType="Settings" position="6" length="2" scale="0.1"
+        bitPosition="0" min="-10" max="20" step="0.1"></record>
+    <record channelid="p79DelayedEnableReheating" requestByte="0A05A0" dataType="Settings" position="6" length="2"
+        scale="1.0" bitPosition="0" min="0" max="60" step="1.0"></record>
+    <!--<record channelid="outputElectricalHeatingStage1" requestByte="06" dataType="Settings" position="27" length="1"
+        scale="0.1" bitPosition="0" min="0" max="10" step="1.0"></record> TODO: ? -->
+
+    <!--<record channelid="upperLimitEvaporatorTemperatureForDefrostEnd" requestByte="03" dataType="Settings"
+        position="4" length="2" scale="0.1" bitPosition="0" min="10" max="30" step="0.1"></record> TODO: which command? -->
+    <record channelid="maxEvaporatorDefrostTime" requestByte="0A057D" dataType="Settings" position="6" length="2"
+        scale="1.0" bitPosition="0" min="2" max="250" step="1.0"></record><!-- min=60? -->
+    <!--
+    <record channelid="limitTemperatureCondenserElectricalReheating" requestByte="03" dataType="Settings"
+        position="8" length="2" scale="0.1" bitPosition="0" min="10" max="30" step="0.1"></record>
+    <record channelid="limitTemperatureCondenserDefrostTermination" requestByte="03" dataType="Settings"
+        position="10" length="2" scale="0.1" bitPosition="0" min="5" max="10" step="0.1"></record> TODO: WTF? -->
+    <!--
+    <record channelid="p47CompressorRestartDelay" requestByte="03" dataType="Settings" position="12" length="1"
+        scale="1.0" bitPosition="0" min="0" max="20" step="1.0"></record>
+    <record channelid="p48ExhaustFanSpeed" requestByte="03" dataType="Settings" position="13" length="1" scale="1.0"
+        bitPosition="0" min="10" max="100" step="1.0"></record>
+    -->
+    <!--
+    <record channelid="maxDefrostDurationAAExchanger" requestByte="04" dataType="Settings" position="4" length="1"
+        scale="1.0" bitPosition="0" min="0" max="20" step="1.0"></record>
+    <record channelid="defrostStartThreshold" requestByte="04" dataType="Settings" position="5" length="2"
+        scale="0.1" bitPosition="0" min="0" max="100" step="1.0"></record>
+    <record channelid="volumeFlowFilterReplacement" requestByte="04" dataType="Settings" position="7" length="2"
+        scale="1.0" bitPosition="0" min="50" max="100" step="1.0"></record>
+    <record channelid="p85DefrostModeAAHE" requestByte="04" dataType="Settings" position="9" length="1" scale="1.0"
+        bitPosition="0" min="1" max="5" step="1.0"></record>
+    -->
+    <record channelid="p54minStartupCycles" requestByte="0A05B8" dataType="Settings" position="6" length="2" scale="1.0"
+        bitPosition="0" min="1" max="24" step="1.0"></record>
+    <record channelid="p55maxStartupCycles" requestByte="0A05B7" dataType="Settings" position="6" length="2" scale="1.0"
+        bitPosition="0" min="25" max="288" step="1.0"></record>
+    <record channelid="p56OutsideTemperatureMaxHeatingCycles" requestByte="0A05B9" dataType="Settings" position="6"
+        length="2" scale="0.1" bitPosition="0" min="0" max="20" step="0.1"></record>
+    <record channelid="p57OutsideTemperatureMinHeatingCycles" requestByte="0A05BA" dataType="Settings" position="6"
+        length="2" scale="0.1" bitPosition="0" min="0" max="25" step="0.1"></record>
+    <record channelid="P58SuppressTemperatureCaptureDuringPumpStart" requestByte="0A0611" dataType="Settings"
+        position="6" length="2" scale="1.0" bitPosition="0" min="0" max="120" step="0.1"></record>
 </records>
