@@ -19,7 +19,9 @@
 			<channel-group id="ventilation" typeId="channelGroupTypeVentilation" />
 			<channel-group id="heating" typeId="channelGroupTypeHeating" /> 
 			<channel-group id="evaporator" typeId="channelGroupTypeEvaporator" />
-			<!-- <channel-group id="heatingProgram" typeId="channelGroupTypeHeatingProgram" /> TODO: continue here -->			
+			<!--<channel-group id="heatingProgram" typeId="channelGroupTypeHeatingProgram" /> TODO: not possible to implement it like this: mapping missing -->
+			<!--<channel-group id="absenceProgram" typeId="channelGroupTypeAbsenceProgram" /> TODO: missing command-->
+			<channel-group id="dhw" typeId="channelGroupTypeDomesticHotWater" />						
 		</channel-groups>
 		<properties>
 			<property name="vendor">Tecalor</property>
