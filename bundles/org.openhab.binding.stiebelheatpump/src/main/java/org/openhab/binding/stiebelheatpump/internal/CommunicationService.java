@@ -17,6 +17,7 @@ import static org.openhab.binding.stiebelheatpump.internal.StiebelHeatPumpBindin
 import java.time.LocalDateTime;
 import java.time.Year;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -246,6 +247,7 @@ public class CommunicationService {
                 responseAvailable = getData(requestMessage);
                 responseAvailable = parser.fixDuplicatedBytes(responseAvailable);
                 if (parser.headerCheck(responseAvailable)) {
+                    analyzeResponse(responseAvailable);
                     return DataParser.bytesToHex(responseAvailable, true);
                 }
                 success = true;
@@ -257,6 +259,86 @@ public class CommunicationService {
             throw new StiebelHeatPumpException("readData failed 3 time!");
         }
         return "";
+    }
+
+    private void analyzeResponse(byte[] response) throws StiebelHeatPumpException {
+        // HEADER_START
+        // GET
+        // CHECKSUM
+        // DATA x....y
+        // ESCAPE
+        // END
+        if (response.length < 5) {
+            logger.debug("Invalid response: {}", DataParser.bytesToHex(response, true));
+            return;
+        } else if (response.length == 5) {
+            logger.debug("Empty response: {}", DataParser.bytesToHex(response, true));
+            return;
+        }
+
+        DataParser dp = new DataParser();
+        int numDataBytes = response.length - 5;
+
+        // bit positions
+        for (int pos = 3; pos <= response.length - 2; pos++) {
+            ArrayList<Object> positionValues = new ArrayList<>();
+            for (int bitPos = 1; bitPos < 8; bitPos++) { // TODO: <= 8 ?
+                RecordDefinition rDef = new RecordDefinition();
+                rDef.setPosition(pos);
+                rDef.setScale(1.0);
+                // this is what we are interested in
+                rDef.setBitPosition(bitPos);
+                rDef.setLength(1);
+                positionValues.add(dp.parseRecord(response, rDef));
+            }
+            logger.debug("Bitpos:\tFound on pos={}\tvalues=[{}]", pos, Arrays.toString(positionValues.toArray()));
+        }
+
+        // each byte
+        for (int pos = 3; pos <= response.length - 2; pos++) {
+            RecordDefinition rDef = new RecordDefinition();
+            rDef.setPosition(pos);
+            rDef.setScale(1.0);
+            rDef.setBitPosition(0);
+            // this is what we are interested in
+            rDef.setLength(1);
+            Object parsedData = dp.parseRecord(response, rDef);
+            logger.debug("1-Byte:\tFound on pos={}\tvalue={}", pos, parsedData);
+        }
+        if (numDataBytes < 2) {
+            return;
+        }
+        // S, G, C, D, D, D, D, E, E
+        // 0, 1, 2, 3, 4, 5, 6, 7, 8 = pos
+        // 1, 2, 3, 4, 5, 6, 7 ,8 ,9 = len
+
+        // two bytes
+        for (int pos = 3; pos <= response.length - 4; pos += 2) {
+            RecordDefinition rDef = new RecordDefinition();
+            rDef.setPosition(pos);
+            rDef.setScale(1.0);
+            rDef.setBitPosition(0);
+            // this is what we are interested in
+            rDef.setLength(2);
+            Object parsedData = dp.parseRecord(response, rDef);
+            logger.debug("2-Bytes:\tFound on pos={}\tvalue={}", pos, parsedData);
+        }
+
+        if (numDataBytes < 4) {
+            return;
+        }
+
+        // four bytes
+        for (int pos = 3; pos <= response.length - 6; pos += 4) {
+            RecordDefinition rDef = new RecordDefinition();
+            rDef.setPosition(pos);
+            rDef.setScale(1.0);
+            rDef.setBitPosition(0);
+            // this is what we are interested in
+            rDef.setLength(4);
+            Object parsedData = dp.parseRecord(response, rDef);
+            logger.debug("4-Bytes:\tFound on pos={}\tvalue={}", pos, parsedData);
+        }
     }
 
     /**
