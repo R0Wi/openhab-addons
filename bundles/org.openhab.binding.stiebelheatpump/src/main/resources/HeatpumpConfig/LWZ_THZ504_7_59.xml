@@ -32,8 +32,8 @@
 		bitPosition="0" min="0" max="0" step="0.0"></record>
 	<record channelid="insideTemperature" requestByte="FB" dataType="Sensor" position="18" length="2" scale="0.1"
 		bitPosition="0" min="0" max="0" step="0.0"></record>
-	<record channelid="evaporatorTemperature" requestByte="FB" dataType="Sensor" position="20" length="2" scale="0.1"
-		bitPosition="0" min="0" max="0" step="0.0"></record>
+	<record channelid="evaporatorTemperature" requestByte="FB" dataType="Sensor" position="20" length="2"
+		scale="0.1" bitPosition="0" min="0" max="0" step="0.0"></record>
 	<record channelid="condenserTemperature" requestByte="FB" dataType="Sensor" position="22" length="2" scale="0.1"
 		bitPosition="0" min="0" max="0" step="0.0"></record>
 	<record channelid="extractFanSpeed" requestByte="FB" dataType="Sensor" position="30" length="1" scale="1.0"
@@ -73,11 +73,11 @@
 	<record channelid="DHWMode" requestByte="09" dataType="Status" position="8" length="2" scale="1.0"
 		bitPosition="0" min="0" max="0" step="0.0"></record>
 	<record channelid="DHWBoosterMode" requestByte="09" dataType="Status" position="10" length="2" scale="1.0"
-			bitPosition="0" min="0" max="0" step="0.0"></record>
+		bitPosition="0" min="0" max="0" step="0.0"></record>
 	<record channelid="coolingMode" requestByte="09" dataType="Status" position="12" length="2" scale="1.0"
 		bitPosition="0" min="0" max="0" step="0.0"></record>
 	<record channelid="compressorStarts" requestByte="09" dataType="Status" position="16" length="2" scale="1.0"
-			bitPosition="0" min="0" max="0" step="0.0"></record>
+		bitPosition="0" min="0" max="0" step="0.0"></record>
 	<record channelid="p01RoomTemperatureStandardMode" requestByte="17" dataType="Settings" position="4" length="2"
 		scale="0.1" bitPosition="0" min="10" max="30" step="0.1"></record>
 	<record channelid="p02RoomTemperatureSetbackMode" requestByte="17" dataType="Settings" position="6" length="2"

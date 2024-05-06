@@ -32,8 +32,8 @@
 		bitPosition="0" min="0" max="0" step="0.0"></record>
 	<record channelid="insideTemperature" requestByte="FB" dataType="Sensor" position="18" length="2" scale="0.1"
 		bitPosition="0" min="0" max="0" step="0.0"></record>
-	<record channelid="evaporatorTemperature" requestByte="FB" dataType="Sensor" position="20" length="2" scale="0.1"
-		bitPosition="0" min="0" max="0" step="0.0"></record>
+	<record channelid="evaporatorTemperature" requestByte="FB" dataType="Sensor" position="20" length="2"
+		scale="0.1" bitPosition="0" min="0" max="0" step="0.0"></record>
 	<record channelid="condenserTemperature" requestByte="FB" dataType="Sensor" position="22" length="2" scale="0.1"
 		bitPosition="0" min="0" max="0" step="0.0"></record>
 	<record channelid="extractFanSpeed" requestByte="FB" dataType="Sensor" position="30" length="1" scale="1.0"
