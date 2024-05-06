@@ -1,40 +1,40 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <thing:thing-descriptions bindingId="stiebelheatpump"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xmlns:thing="https://openhab.org/schemas/thing-description/v1.0.0"
-    xsi:schemaLocation="https://openhab.org/schemas/thing-description/v1.0.0 https://openhab.org/schemas/thing-description-1.0.0.xsd">
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:thing="https://openhab.org/schemas/thing-description/v1.0.0"
+	xsi:schemaLocation="https://openhab.org/schemas/thing-description/v1.0.0 https://openhab.org/schemas/thing-description-1.0.0.xsd">
 
 	<channel-group-type id="channelGroupTypeVersion">
 		<label>Version</label>
 		<description>Version information of heat pump firmware</description>
 		<channels>
 			<!-- at least 1 channel-group with id = version must be included -->
-			<channel id="version" typeId="version" />
-			<channel id="dumpResponse" typeId="dumpResponse" />
+			<channel id="version" typeId="version"/>
+			<channel id="dumpResponse" typeId="dumpResponse"/>
 			<channel id="requestBytes" typeId="requestBytes"/>
-            <channel id="respondBytes" typeId="respondBytes"/>
+			<channel id="respondBytes" typeId="respondBytes"/>
 		</channels>
 	</channel-group-type>
 	<channel-group-type id="channelGroupTypeTime">
 		<label>Time</label>
 		<description>Date and time information of heat pump</description>
 		<channels>
-			<channel id="setTime" typeId="setTime" />
-			<channel id="weekday" typeId="weekday" />
-			<channel id="hours" typeId="hours" />
-			<channel id="minutes" typeId="minutes" />
-			<channel id="seconds" typeId="seconds" />
-			<channel id="year" typeId="year" />
-			<channel id="month" typeId="month" />
-			<channel id="day" typeId="day" />
+			<channel id="setTime" typeId="setTime"/>
+			<channel id="weekday" typeId="weekday"/>
+			<channel id="hours" typeId="hours"/>
+			<channel id="minutes" typeId="minutes"/>
+			<channel id="seconds" typeId="seconds"/>
+			<channel id="year" typeId="year"/>
+			<channel id="month" typeId="month"/>
+			<channel id="day" typeId="day"/>
 		</channels>
 	</channel-group-type>
 	<channel-group-type id="channelGroupTypeCurrentValues">
 		<label>Measurements</label>
 		<description>Measurements of the heat pump.</description>
 		<channels>
-		  <channel id="refreshTime" typeId="dateTime" />  
-  			<channel id="collectorTemperature" typeId="temperature">
+			<channel id="refreshTime" typeId="dateTime"/>
+			<channel id="collectorTemperature" typeId="temperature">
 				<label>Collector temperature</label>
 				<description>Collector temperature</description>
 			</channel>
@@ -882,22 +882,22 @@
 				<label>Program State Fan</label>
 				<description>Program State Fan</description>
 			</channel>
-            <channel id="baseTimeAP0" typeId="timeAp0">
-                <label>Base time AP0</label>
-                <description>Base time AP0</description>
-            </channel>
-            <channel id="statusAP0" typeId="hourCounter">
-                <label>Status AP0</label>
-                <description>Status AP0</description>
-            </channel>            
-            <channel id="startTimeAP0" typeId="timeAp0">
-                <label>Start time AP0</label>
-                <description>Start time AP0</description>
-            </channel>  
-            <channel id="endTimeAP0" typeId="timeAp0">
-                <label>End time AP0</label>
-                <description>End time AP0</description>
-            </channel> 
+			<channel id="baseTimeAP0" typeId="timeAp0">
+				<label>Base time AP0</label>
+				<description>Base time AP0</description>
+			</channel>
+			<channel id="statusAP0" typeId="hourCounter">
+				<label>Status AP0</label>
+				<description>Status AP0</description>
+			</channel>
+			<channel id="startTimeAP0" typeId="timeAp0">
+				<label>Start time AP0</label>
+				<description>Start time AP0</description>
+			</channel>
+			<channel id="endTimeAP0" typeId="timeAp0">
+				<label>End time AP0</label>
+				<description>End time AP0</description>
+			</channel>
 		</channels>
 	</channel-group-type>
 </thing:thing-descriptions>

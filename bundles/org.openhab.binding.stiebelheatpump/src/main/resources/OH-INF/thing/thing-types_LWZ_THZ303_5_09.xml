@@ -1,19 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <thing:thing-descriptions bindingId="stiebelheatpump"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xmlns:thing="https://openhab.org/schemas/thing-description/v1.0.0"
-    xsi:schemaLocation="https://openhab.org/schemas/thing-description/v1.0.0 https://openhab.org/schemas/thing-description-1.0.0.xsd">
-    
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:thing="https://openhab.org/schemas/thing-description/v1.0.0"
+	xsi:schemaLocation="https://openhab.org/schemas/thing-description/v1.0.0 https://openhab.org/schemas/thing-description-1.0.0.xsd">
+
 	<thing-type id="LWZ_THZ303_5_09">
 		<label>Stiebel heat pump LWZ303 5.09</label>
 		<description>LWZ/THZ connecting with firmware version 5.09.</description>
 		<channel-groups>
 			<!-- at least 1 channel-group with id = version must be included -->
-			<channel-group id="version" typeId="channelGroupTypeVersion" />
-			<channel-group id="time" typeId="channelGroupTypeTime" />
-			<channel-group id="currentValues" typeId="channelGroupTypeCurrentValues" />
-			<channel-group id="operationCounters" typeId="channelGroupTypeOperationCounters" />
-			<channel-group id="nominalValues" typeId="channelGroupTypeNominalValues" />
+			<channel-group id="version" typeId="channelGroupTypeVersion"/>
+			<channel-group id="time" typeId="channelGroupTypeTime"/>
+			<channel-group id="currentValues" typeId="channelGroupTypeCurrentValues"/>
+			<channel-group id="operationCounters" typeId="channelGroupTypeOperationCounters"/>
+			<channel-group id="nominalValues" typeId="channelGroupTypeNominalValues"/>
 		</channel-groups>
 		<properties>
 			<property name="vendor">Stiebel Eltron</property>
