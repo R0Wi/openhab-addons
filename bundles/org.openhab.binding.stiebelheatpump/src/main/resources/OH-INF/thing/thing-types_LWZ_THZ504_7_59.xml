@@ -14,6 +14,7 @@
 			<channel-group id="currentValues" typeId="channelGroupTypeCurrentValues"/>
 			<channel-group id="operationCounters" typeId="channelGroupTypeOperationCounters"/>
 			<channel-group id="nominalValues" typeId="channelGroupTypeNominalValues"/>
+			<channel-group id="display" typeId="channelGroupTypeDisplay"/>
 		</channel-groups>
 		<properties>
 			<property name="vendor">Stiebel Eltron</property>
