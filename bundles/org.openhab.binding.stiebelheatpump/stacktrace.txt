@@ -1,0 +1,27 @@
+ocating method activate in class org.openhab.core.thing.binding.BaseThingHandlerFactory
+09:43:53.432 [DEBUG] [nternal.StiebelHeatPumpHandlerFactory] - bundle org.openhab.binding.stiebelheatpump:4.1.1 (329)[org.openhab.binding.stiebelheatpump.internal.StiebelHeatPumpHandlerFactory(385)] : Found activate method: protected void org.openhab.core.thing.binding.BaseThingHandlerFactory.activate(org.osgi.service.component.ComponentContext)
+09:43:53.435 [DEBUG] [nternal.StiebelHeatPumpHandlerFactory] - bundle org.openhab.binding.stiebelheatpump:4.1.1 (329)[org.openhab.binding.stiebelheatpump.internal.StiebelHeatPumpHandlerFactory(385)] : invoking activate: activate: parameters [org.apache.felix.scr.impl.manager.ComponentContextImpl]
+09:43:53.450 [DEBUG] [nternal.StiebelHeatPumpHandlerFactory] - bundle org.openhab.binding.stiebelheatpump:4.1.1 (329)[org.openhab.binding.stiebelheatpump.internal.StiebelHeatPumpHandlerFactory(385)] : invoked activate: activate
+09:43:53.459 [DEBUG] [nternal.StiebelHeatPumpHandlerFactory] - bundle org.openhab.binding.stiebelheatpump:4.1.1 (329)[org.openhab.binding.stiebelheatpump.internal.StiebelHeatPumpHandlerFactory(385)] : Set implementation object for component
+09:43:53.461 [DEBUG] [nternal.StiebelHeatPumpHandlerFactory] - bundle org.openhab.binding.stiebelheatpump:4.1.1 (329)[org.openhab.binding.stiebelheatpump.internal.StiebelHeatPumpHandlerFactory(385)] : Changed state from satisfied to active
+09:43:53.467 [INFO ] [hab.event.ThingStatusInfoChangedEvent] - Thing 'stiebelheatpump:LWZ_THZ504_7_59:592c4c88e7' changed from UNINITIALIZED (HANDLER_MISSING_ERROR): Handler factory not found to UNINITIALIZED (NOT_YET_READY)
+09:43:54.408 [INFO ] [openhab.event.ItemStateChangedEvent  ] - Item 'Ecowitt_Gateway_Wind_Direction' changed from 182 ° to 183 °
+09:43:54.409 [INFO ] [openhab.event.ItemStateChangedEvent  ] - Item 'Ecowitt_Gateway_Gust_Speed' changed from 5.4 km/h to 5.04 km/h
+09:43:54.410 [INFO ] [openhab.event.ItemStateChangedEvent  ] - Item 'Ecowitt_Gateway_Light_Intensity' changed from 18240 lx to 18300 lx
+09:43:54.467 [INFO ] [hab.event.ThingStatusInfoChangedEvent] - Thing 'stiebelheatpump:LWZ_THZ504_7_59:592c4c88e7' changed from UNINITIALIZED (NOT_YET_READY) to INITIALIZING
+09:43:54.472 [DEBUG] [tiebelheatpump.internal.ConfigLocator] - Parsing  heat pump configuration file LWZ_THZ504_7_59.xml.
+09:43:54.503 [DEBUG] [tpump.internal.StiebelHeatPumpHandler] - Request : RequestByte -> FD 
+09:43:54.505 [DEBUG] [tpump.internal.StiebelHeatPumpHandler] - set version request : FD 
+09:43:54.508 [DEBUG] [tpump.internal.StiebelHeatPumpHandler] - Request : RequestByte -> FC 
+09:43:54.510 [DEBUG] [tpump.internal.StiebelHeatPumpHandler] - set time request : FC 
+09:43:54.512 [DEBUG] [tpump.internal.StiebelHeatPumpHandler] - Request : RequestByte -> FB 
+09:43:54.515 [DEBUG] [tpump.internal.StiebelHeatPumpHandler] - Request : RequestByte -> 09 
+09:43:54.517 [DEBUG] [tpump.internal.StiebelHeatPumpHandler] - Request : RequestByte -> 17 
+09:43:54.519 [WARN ] [ing.stiebelheatpump.protocol.Requests] - Could not find valid request definition for dumpResponse,  please verify thing definition.
+09:43:54.521 [WARN ] [ing.stiebelheatpump.protocol.Requests] - Could not find valid request definition for requestBytes,  please verify thing definition.
+09:43:54.522 [WARN ] [ing.stiebelheatpump.protocol.Requests] - Could not find valid request definition for respondBytes,  please verify thing definition.
+09:43:54.523 [WARN ] [ing.stiebelheatpump.protocol.Requests] - Could not find valid request definition for setTime,  please verify thing definition.
+09:43:54.524 [WARN ] [ing.stiebelheatpump.protocol.Requests] - Could not find valid request definition for refreshTime,  please verify thing definition.
+09:43:54.525 [WARN ] [ing.stiebelheatpump.protocol.Requests] - Could not find valid request definition for compressorB,  please verify thing definition.
+09:43:54.528 [WARN ] [ing.stiebelheatpump.protocol.Requests] - Could not find valid request definition for heatingMode,  please verify thing definition.
+09:43:54.558 [INFO ] [hab.event.ThingStatusInfoChangedEvent] - Thing 'stiebelheatpump:LWZ_THZ504_7_59:592c4c88e7' changed from INITIALIZING to UNKNOWN (HANDLER_CONFIGURATION_PENDING): Waiting for messages from device
