@@ -1,0 +1,13 @@
+BoosterHc = false
+FilterDown = false
+Cooling = false
+PumpHc = true
+Compressor = true
+Service = false
+FilterUp = false
+FilterBoth = false
+HeatingHc = false
+VentStage = false
+SwitchingProgram = true
+HeatingDhw = true
+Defrost = false
