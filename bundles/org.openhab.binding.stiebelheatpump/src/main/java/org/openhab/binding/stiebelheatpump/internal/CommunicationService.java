@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2010-2023 Contributors to the openHAB project
+ * Copyright (c) 2010-2024 Contributors to the openHAB project
  *
  * See the NOTICE file(s) distributed with this work for additional
  * information.
@@ -69,6 +69,7 @@ public class CommunicationService {
         try {
             connector.connect(serialPortManager, serialPortName, baudRate);
         } catch (StiebelHeatPumpException e) {
+            logger.error("Could not connect to heatpump", e);
         }
     }
 

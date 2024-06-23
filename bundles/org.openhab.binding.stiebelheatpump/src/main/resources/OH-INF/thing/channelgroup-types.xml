@@ -174,6 +174,64 @@
 			</channel>
 		</channels>
 	</channel-group-type>
+	<channel-group-type id="channelGroupTypeDisplay">
+		<label>Display</label>
+		<description>Reads display icons of the heat pump.</description>
+		<channels>
+			<channel id="SwitchingProgram" typeId="contactStatus">
+				<label>Switching Program</label>
+				<description>Switching Program</description>
+			</channel>
+			<channel id="Compressor" typeId="contactStatus">
+				<label>Compressor</label>
+				<description>Compressor</description>
+			</channel>
+			<channel id="HeatingHc" typeId="contactStatus">
+				<label>HeatingHc</label>
+				<description>HeatingHc</description>
+			</channel>
+			<channel id="HeatingDhw" typeId="contactStatus">
+				<label>HeatingDhw</label>
+				<description>HeatingDhw</description>
+			</channel>
+			<channel id="BoosterHc" typeId="contactStatus">
+				<label>BoosterHc</label>
+				<description>BoosterHc</description>
+			</channel>
+			<channel id="FilterBoth" typeId="contactStatus">
+				<label>FilterBoth</label>
+				<description>FilterBoth</description>
+			</channel>
+			<channel id="VentStage" typeId="contactStatus">
+				<label>VentStage</label>
+				<description>VentStage</description>
+			</channel>
+			<channel id="PumpHc" typeId="contactStatus">
+				<label>PumpHc</label>
+				<description>PumpHc</description>
+			</channel>
+			<channel id="Defrost" typeId="contactStatus">
+				<label>Defrost</label>
+				<description>Defrost</description>
+			</channel>
+			<channel id="FilterUp" typeId="contactStatus">
+				<label>FilterUp</label>
+				<description>FilterUp</description>
+			</channel>
+			<channel id="FilterDown" typeId="contactStatus">
+				<label>FilterDown</label>
+				<description>FilterDown</description>
+			</channel>
+			<channel id="Cooling" typeId="contactStatus">
+				<label>Cooling</label>
+				<description>Cooling</description>
+			</channel>
+			<channel id="Service" typeId="contactStatus">
+				<label>Service</label>
+				<description>Service</description>
+			</channel>
+		</channels>
+	</channel-group-type>
 	<channel-group-type id="channelGroupTypeNominalValues">
 		<label>Settings nominal values</label>
 		<description>Reads settings nominal values of the heat pump.</description>

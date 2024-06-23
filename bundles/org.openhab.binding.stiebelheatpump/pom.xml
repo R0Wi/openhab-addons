@@ -7,11 +7,20 @@
   <parent>
     <groupId>org.openhab.addons.bundles</groupId>
     <artifactId>org.openhab.addons.reactor.bundles</artifactId>
-    <version>4.1.1</version>
+    <version>4.2.1</version>
   </parent>
 
   <artifactId>org.openhab.binding.stiebelheatpump</artifactId>
 
   <name>openHAB Add-ons :: Bundles :: stiebelheatpump Binding</name>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-inline</artifactId>
+      <version>5.2.0</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
 
 </project>

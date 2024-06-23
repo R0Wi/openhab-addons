@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2010-2023 Contributors to the openHAB project
+ * Copyright (c) 2010-2024 Contributors to the openHAB project
  *
  * See the NOTICE file(s) distributed with this work for additional
  * information.
@@ -237,7 +237,7 @@ public class StiebelHeatPumpHandler extends BaseThingHandler {
         communicationService = new CommunicationService(serialPortManager, config.port, config.baudRate,
                 config.waitingTime, scheduler);
 
-        scheduler.schedule(this::getInitialHeatPumpSettings, 0, TimeUnit.SECONDS);
+        scheduler.schedule(() -> this.getInitialHeatPumpSettings(), 0, TimeUnit.SECONDS);
         updateStatus(ThingStatus.UNKNOWN, ThingStatusDetail.HANDLER_CONFIGURATION_PENDING,
                 "Waiting for messages from device");
     }
@@ -305,11 +305,11 @@ public class StiebelHeatPumpHandler extends BaseThingHandler {
      * @return true if heat pump information could be successfully connected and read
      */
     private void getInitialHeatPumpSettings() {
-        String thingFirmwareVersion = getThing().getProperties().get(Thing.PROPERTY_FIRMWARE_VERSION);
 
         // get version information from the heat pump
         communicationService.connect();
         try {
+            String thingFirmwareVersion = getThing().getProperties().get(Thing.PROPERTY_FIRMWARE_VERSION);
             String version = communicationService.getVersion(versionRequest);
             logger.info("Heat pump has version {}", version);
             if (!thingFirmwareVersion.equals(version)) {
@@ -317,8 +317,8 @@ public class StiebelHeatPumpHandler extends BaseThingHandler {
                         thingFirmwareVersion, version);
                 return;
             }
-        } catch (StiebelHeatPumpException e) {
-            logger.debug("{}", e.getMessage());
+        } catch (Exception e) {
+            logger.warn("{}", e.getMessage(), e);
             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR,
                     "Communication problem with heatpump");
             communicationService.finalizer();
@@ -540,6 +540,7 @@ public class StiebelHeatPumpHandler extends BaseThingHandler {
             String[] parts = channelUID.getId()
                     .split(Pattern.quote(StiebelHeatPumpBindingConstants.CHANNELGROUPSEPERATOR));
             String channelId = parts[parts.length - 1];
+            logger.debug("Checking channel {} for refresh.", channelId);
 
             Request request = heatPumpConfiguration.getRequestByChannelId(channelId);
             if (request != null) {
@@ -556,11 +557,14 @@ public class StiebelHeatPumpHandler extends BaseThingHandler {
 
             if (isLinked(channelUID)) {
                 scheduleRequestForChannel(channelUID, false);
+            } else {
+                logger.debug("Channel {} is not linked, not scheduling request.", channelUID.getId());
             }
         }
     }
 
     private void scheduleRequestForChannel(ChannelUID channelUID, boolean refreshNow) {
+        logger.debug("Checking schedule for {}", channelUID.getId());
         Request request = heatPumpConfiguration.getRequestByChannelId(channelUID.getId());
         if (request != null) {
             String requestStr = DataParser.bytesToHex(request.getRequestByte());
