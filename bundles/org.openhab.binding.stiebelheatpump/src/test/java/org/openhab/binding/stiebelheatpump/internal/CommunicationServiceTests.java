@@ -24,6 +24,7 @@ import java.io.OutputStream;
 import java.net.URL;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ScheduledExecutorService;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,6 +37,7 @@ import org.openhab.binding.stiebelheatpump.protocol.ProtocolConnector;
 import org.openhab.binding.stiebelheatpump.protocol.RecordDefinition;
 import org.openhab.binding.stiebelheatpump.protocol.RecordDefinition.Type;
 import org.openhab.binding.stiebelheatpump.protocol.Request;
+import org.openhab.binding.stiebelheatpump.protocol.Requests;
 import org.openhab.core.io.transport.serial.SerialPort;
 import org.openhab.core.io.transport.serial.SerialPortIdentifier;
 import org.openhab.core.io.transport.serial.SerialPortManager;
@@ -127,6 +129,99 @@ public class CommunicationServiceTests {
         }
     }
 
+    @Test
+    public void testParseCoolingHc1SetThz504() throws StiebelHeatPumpException, IOException {
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        URL congfigUrl = classLoader.getResource("HeatpumpConfig/LWZ_THZ504_7_59.xml");
+        Bundle mockedBundle = mock(Bundle.class);
+        when(mockedBundle.getEntry(anyString())).thenReturn(congfigUrl);
+        try (MockedStatic<FrameworkUtil> mockedFrameworkUtil = Mockito.mockStatic(FrameworkUtil.class)) {
+            mockedFrameworkUtil.when(() -> FrameworkUtil.getBundle(ConfigParser.class)).thenReturn(mockedBundle);
+            ConfigLocator configLocator = new ConfigLocator("LWZ_THZ504_7_59.xml");
+            List<Request> requests = configLocator.getRequests();
+
+            // Get Cooling HC1 Setting
+            String requestString = "0B0287";
+            String responseHexStr = "0100960B028700011003";
+
+            byte[] response = HexUtils.hexToBytes(responseHexStr);
+
+            byte requestByte = HexUtils.hexToBytes(requestString)[0];
+            Request request = requests.stream().filter(r -> r.getRequestByte()[0] == requestByte).findFirst().get();
+
+            DataParser dataParser = new DataParser();
+            Map<String, Object> parsedRecords = dataParser.parseRecords(response, request);
+
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter("parsedRecords.txt"))) {
+                // Print values
+                parsedRecords.forEach((key, value) -> {
+                    try {
+                        writer.write(key + " = " + value + "\n");
+                    } catch (IOException e) {
+                        // e.printStackTrace();
+                    }
+                });
+            }
+        }
+    }
+
+    @Test
+    public void testSetCoolingThz504() throws Exception {
+        final String channelId = "p99CoolingHC1Switch";
+        mockSerialPort();
+
+        // Mock scheduler service to just execute everything right away
+        ScheduledExecutorService scheduler = mock(ScheduledExecutorService.class);
+        when(scheduler.schedule(any(Runnable.class), anyLong(), any())).thenAnswer(new Answer<Object>() {
+            @Override
+            public Object answer(InvocationOnMock invocation) {
+                Runnable runnable = invocation.getArgument(0);
+                runnable.run();
+                return null;
+            }
+        });
+
+        // Configure output stream to return data
+        when(inputStream.read(any())).thenAnswer(new Answer<Object>() {
+            private int count = 0;
+
+            @Override
+            public Object answer(InvocationOnMock invocation) {
+                byte[] buffer = invocation.getArgument(0);
+                if (count == 0) {
+                    buffer[0] = DataParser.ESCAPE;
+                } else if (count == 1) {
+                    buffer[0] = DataParser.STARTCOMMUNICATION;
+                } else {
+                    buffer[0] = 0x00;
+                }
+                count++;
+                return 1;
+            }
+        });
+        when(inputStream.available()).thenReturn(1);
+
+        CommunicationService communicationService = new CommunicationService(serialPortManager, "", 9600, 1000,
+                scheduler);
+        communicationService.connect();
+
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        URL congfigUrl = classLoader.getResource("HeatpumpConfig/LWZ_THZ504_7_59.xml");
+        Bundle mockedBundle = mock(Bundle.class);
+        when(mockedBundle.getEntry(anyString())).thenReturn(congfigUrl);
+        try (MockedStatic<FrameworkUtil> mockedFrameworkUtil = Mockito.mockStatic(FrameworkUtil.class)) {
+            mockedFrameworkUtil.when(() -> FrameworkUtil.getBundle(ConfigParser.class)).thenReturn(mockedBundle);
+
+            ConfigLocator configLocator = new ConfigLocator("LWZ_THZ504_7_59.xml");
+            List<Request> requestList = configLocator.getRequests();
+            Requests requests = new Requests(requestList);
+            RecordDefinition coolingSwitchRecordDefinition = requests.getRecordDefinitionByChannelId(channelId);
+
+            communicationService.writeData(true, channelId, coolingSwitchRecordDefinition);
+
+        }
+    }
+
     private SerialPort mockSerialPort() throws Exception {
         SerialPort serialPort = mock(SerialPort.class);
         when(serialPort.getOutputStream()).thenReturn(outputStream);
@@ -144,7 +239,7 @@ public class CommunicationServiceTests {
 
     private ProtocolConnector mockSerialConnector() throws StiebelHeatPumpException {
         ProtocolConnector connector = mock(ProtocolConnector.class);
-        when(connector.get()).thenAnswer(new Answer() {
+        when(connector.get()).thenAnswer(new Answer<Object>() {
             private int count = 0;
 
             @Override

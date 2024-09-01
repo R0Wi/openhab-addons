@@ -111,7 +111,7 @@ public class StiebelHeatPumpHandler extends BaseThingHandler {
 
         try {
             Map<String, Object> data = new HashMap<>();
-            switch (channelUID.getId()) {
+            switch (channelId) {
                 case CHANNEL_SETTIME:
                     data = communicationService.setTime(timeRequest);
                     updateState(channelUID, OnOffType.OFF);
@@ -555,11 +555,12 @@ public class StiebelHeatPumpHandler extends BaseThingHandler {
                 record.setChannelid(channelUID.getId());
             }
 
-            if (isLinked(channelUID)) {
-                scheduleRequestForChannel(channelUID, false);
-            } else {
+            if (!isLinked(channelUID)) {
                 logger.debug("Channel {} is not linked, not scheduling request.", channelUID.getId());
+                continue;
             }
+
+            scheduleRequestForChannel(channelUID, false);
         }
     }
 

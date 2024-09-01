@@ -234,7 +234,7 @@
 	</channel-group-type>
 	<channel-group-type id="channelGroupTypeNominalValues">
 		<label>Settings nominal values</label>
-		<description>Reads settings nominal values of the heat pump.</description>
+		<description>Reads and Sets settings nominal values of the heat pump.</description>
 		<channels>
 			<channel id="p01RoomTemperatureStandardMode" typeId="temperatureSetting">
 				<label>P01 Room temperature standard</label>
@@ -283,6 +283,10 @@
 			<channel id="p12FanStageManual" typeId="fanStageSetting">
 				<label>P12 Fan stage manual</label>
 				<description>P12 Fan stage manual mode setting</description>
+			</channel>
+			<channel id="p99CoolingHC1Switch" typeId="switchSetting">
+				<label>P99 Cooling HC1</label>
+				<description>P99 Set Cooling HC1 ON/OFF</description>
 			</channel>
 		</channels>
 	</channel-group-type>

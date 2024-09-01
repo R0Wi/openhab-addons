@@ -56,6 +56,21 @@ class FineOffsetDataParserTest {
     }
 
     @Test
+    void testTmp() {
+        int number = 
+        byte[] bytes = HexUtils.hexToBytes(
+                "FFFF2700470100EB063508250E09279D0200AB074C0A00A50B00050C0008150005359816021C17022C3519001F0E0000100000110136120000025513000015AA0D00006C0001DA0032");
+        DebugDetails debugDetails = new DebugDetails(bytes, Command.CMD_GW1000_LIVEDATA, Protocol.DEFAULT);
+        List<String> data = new FineOffsetDataParser(Protocol.DEFAULT).getMeasuredValues(bytes,
+                new ConversionContext(ZoneOffset.UTC), debugDetails)
+                .stream()
+                .map(val -> val.toString())
+                .toList();
+        String val = data.get(10);
+        Assertions.assertThat(data != null).isTrue();
+    }
+
+    @Test
     void testLiveDataWithManySensors() {
         byte[] bytes = HexUtils.hexToBytes(
                 "FFFF27007B0100D206240826CC0926CC02004907450A00760B00160C001F150001C00C16000017002A00144D00372C381A0085223E1B00A72333580059005A00620000000061FFFFFFFF60FF1900380E000010002D1100A012000000A013000000A00D009F63004D417000CF2C00250020001B0018020B021E06722164");
