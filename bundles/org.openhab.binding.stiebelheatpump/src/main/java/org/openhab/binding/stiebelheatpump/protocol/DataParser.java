@@ -51,6 +51,7 @@ public class DataParser {
     public static byte STARTCOMMUNICATION = (byte) 0x02;
     public static byte[] FOOTER = { ESCAPE, END };
     public static byte[] DATAAVAILABLE = { ESCAPE, STARTCOMMUNICATION };
+    private static byte[] UNKNOWN_COMMAND = { HEADERSTART, END };
 
     protected static final char[] hexArray = "0123456789ABCDEF".toCharArray();
 
@@ -277,6 +278,11 @@ public class DataParser {
         }
 
         if (response[1] != GET & response[1] != SET) {
+            if (response[0] == UNKNOWN_COMMAND[0] && response[1] == UNKNOWN_COMMAND[1]) {
+                throw new StiebelHeatPumpException(
+                        "device doesn't know this command (unknown command) on request of data: "
+                                + bytesToHex(response, true));
+            }
             throw new StiebelHeatPumpException("invalid response on request of data, response is neither get nor set: "
                     + bytesToHex(response, true));
         }
