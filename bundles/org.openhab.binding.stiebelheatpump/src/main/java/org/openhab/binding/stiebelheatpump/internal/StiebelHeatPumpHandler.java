@@ -356,7 +356,7 @@ public class StiebelHeatPumpHandler extends BaseThingHandler {
             // do the channel update immediately within the communicationInUse guard to avoid clashing TODO
             updateChannels(data);
         } catch (Exception e) {
-            logger.debug("Exception occurred during execution: {}", e.getMessage(), e);
+            logger.error("Exception occurred during execution of sendRequests.", e);
             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.OFFLINE.COMMUNICATION_ERROR, e.getMessage());
         } finally {
             // communicationInUse.set(false);
