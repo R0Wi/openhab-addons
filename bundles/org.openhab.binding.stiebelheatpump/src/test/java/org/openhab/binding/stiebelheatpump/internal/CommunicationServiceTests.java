@@ -166,6 +166,42 @@ public class CommunicationServiceTests {
     }
 
     @Test
+    public void testParseIndoorTempRCThz504() throws StiebelHeatPumpException, IOException {
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        URL congfigUrl = classLoader.getResource("HeatpumpConfig/LWZ_THZ504_7_59.xml");
+        Bundle mockedBundle = mock(Bundle.class);
+        when(mockedBundle.getEntry(anyString())).thenReturn(congfigUrl);
+        try (MockedStatic<FrameworkUtil> mockedFrameworkUtil = Mockito.mockStatic(FrameworkUtil.class)) {
+            mockedFrameworkUtil.when(() -> FrameworkUtil.getBundle(ConfigParser.class)).thenReturn(mockedBundle);
+            ConfigLocator configLocator = new ConfigLocator("LWZ_THZ504_7_59.xml");
+            List<Request> requests = configLocator.getRequests();
+
+            // Get F4
+            String requestString = "F4";
+            String responseHexStr = "01005AF400810000011400000119010F011500000101600800640100000000D40000000000E30200000000071003";
+
+            byte[] response = HexUtils.hexToBytes(responseHexStr);
+
+            byte requestByte = HexUtils.hexToBytes(requestString)[0];
+            Request request = requests.stream().filter(r -> r.getRequestByte()[0] == requestByte).findFirst().get();
+
+            DataParser dataParser = new DataParser();
+            Map<String, Object> parsedRecords = dataParser.parseRecords(response, request);
+
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter("parsedRecords.txt"))) {
+                // Print values
+                parsedRecords.forEach((key, value) -> {
+                    try {
+                        writer.write(key + " = " + value + "\n");
+                    } catch (IOException e) {
+                        // e.printStackTrace();
+                    }
+                });
+            }
+        }
+    }
+
+    @Test
     public void testSetCoolingThz504() throws Exception {
         final String channelId = "p99CoolingHC1Switch";
         mockSerialPort();

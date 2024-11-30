@@ -237,11 +237,21 @@ public class CommunicationService {
      * @return byte[] represented as sting
      */
     public String dumpRequest(byte[] request) throws StiebelHeatPumpException {
+        // Check if user provided SET header and if so, replace the GET header by a SET header in the calculated
+        // message.
+        // This way the "dumpRequest" can be used to send SET requests as well by setting a message like "0180 ...".
+        Boolean setRequest = request.length >= 2 && request[0] == DataParser.HEADERSTART
+                && request[1] == DataParser.SET;
+        if (setRequest) {
+            // Remove two header bytes from user (will be added later by createRequestMessage)
+            request = Arrays.copyOfRange(request, 2, request.length);
+        }
 
         String requestStr = DataParser.bytesToHex(request, false);
         logger.debug("RequestByte -> {}", requestStr);
+
         byte[] responseAvailable;
-        byte[] requestMessage = createRequestMessage(request);
+        byte[] requestMessage = createRequestMessage(request, setRequest ? DataParser.SET : DataParser.GET);
 
         boolean success = false;
         int count = 0;
@@ -626,8 +636,12 @@ public class CommunicationService {
      * @return request message byte[]
      */
     protected byte[] createRequestMessage(byte[] requestytes) {
+        return createRequestMessage(requestytes, DataParser.GET);
+    }
+
+    private byte[] createRequestMessage(byte[] requestytes, byte getOrSet) {
         short checkSum;
-        byte[] requestMessage = concat(new byte[] { DataParser.HEADERSTART, DataParser.GET, (byte) 0x00 }, requestytes,
+        byte[] requestMessage = concat(new byte[] { DataParser.HEADERSTART, getOrSet, (byte) 0x00 }, requestytes,
                 new byte[] { DataParser.ESCAPE, DataParser.END });
         try {
             // prepare request message
