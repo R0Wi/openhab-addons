@@ -174,4 +174,9 @@
 		bitPosition="4" min="0" max="1" step="0.0"></record>
 	<record channelid="Service" requestByte="0A0176" dataType="Sensor" position="7" length="1" scale="1.0"
 		bitPosition="1" min="0" max="1" step="0.0"></record>
+
+	<record channelid="insideTemperatureRC" requestByte="F4" dataType="Sensor" position="36" length="2" scale="0.1"
+		bitPosition="0" min="0" max="0" step="0.0"></record>
+	<record channelid="seasonMode" requestByte="F4" dataType="Sensor" position="21" length="1" scale="1.0"
+		bitPosition="0" min="0" max="0" step="0.0"></record>
 </records>

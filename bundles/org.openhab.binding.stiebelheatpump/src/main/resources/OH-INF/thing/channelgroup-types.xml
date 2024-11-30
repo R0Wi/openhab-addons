@@ -962,4 +962,18 @@
 			</channel>
 		</channels>
 	</channel-group-type>
+	<channel-group-type id="channelGroupTypeF4HC1">
+		<label>F4 HC1</label>
+		<description>Reads data for HC1.</description>
+		<channels>
+			<channel id="insideTemperatureRC" typeId="temperature">
+				<label>Inside temperature for HC1</label>
+				<description>Inside temperature for HC1</description>
+			</channel>
+			<channel id="seasonMode" typeId="summerWinterMode">
+				<label>Season mode for HC1</label>
+				<description>Season mode for HC1 (Summer or Winter)</description>
+			</channel>
+		</channels>
+	</channel-group-type>
 </thing:thing-descriptions>
