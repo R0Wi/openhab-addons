@@ -222,10 +222,11 @@ public class CommunicationService {
                 success = true;
             } catch (StiebelHeatPumpException e) {
                 logger.warn("Error reading data for {}: {} -> Retry: {}", requestStr, e, count);
+                restartConnector(); // TODO :: refactor and use this for other methods as well
             }
         }
         if (!success) {
-            throw new StiebelHeatPumpException("readData failed 3 time!");
+            throw new StiebelHeatPumpException("readData failed 3 times!");
         }
         return data;
     }
@@ -270,7 +271,7 @@ public class CommunicationService {
             }
         }
         if (!success) {
-            throw new StiebelHeatPumpException("readData failed 3 time!");
+            throw new StiebelHeatPumpException("readData failed 3 times!");
         }
         return "";
     }
@@ -535,8 +536,10 @@ public class CommunicationService {
             throw new StiebelHeatPumpException("heat pump communication could not be established!" + e.getMessage());
         }
         if (response != DataParser.ESCAPE) {
+            var responseStr = String.format("%02X", response);
             throw new StiebelHeatPumpException(
-                    "heat pump is communicating, but did not receive Escape message in initial handshake!");
+                    "heat pump is communicating, but did not receive Escape message in initial handshake. Received: "
+                            + responseStr);
         }
     }
 
@@ -655,7 +658,7 @@ public class CommunicationService {
         return requestMessage;
     }
 
-    byte[] concat(byte[]... arrays) {
+    private byte[] concat(byte[]... arrays) {
         // Determine the length of the result array
         int totalLength = 0;
         for (int i = 0; i < arrays.length; i++) {
@@ -670,5 +673,16 @@ public class CommunicationService {
             currentIndex += arrays[i].length;
         }
         return result;
+    }
+
+    private void restartConnector() {
+        disconnect();
+        try {
+            Thread.sleep(500);
+        } catch (InterruptedException e) {
+            logger.error("Interrupted", e);
+            return;
+        }
+        connect();
     }
 }
