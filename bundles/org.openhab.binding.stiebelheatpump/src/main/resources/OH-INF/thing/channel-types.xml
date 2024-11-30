@@ -461,4 +461,15 @@
 		<description>Stage of the fan from 0-3</description>
 	</channel-type>
 	<!-- End-Stefan -->
+	<channel-type id="summerWinterMode">
+		<item-type>Number</item-type>
+		<label>Summer or Winder mode</label>
+		<description>Summer or Winter Operation Mode for the Heatpump.</description>
+		<state readOnly="true">
+			<options>
+				<option value="1">Winter</option>
+				<option value="2">Summer</option>
+			</options>
+		</state>
+	</channel-type>
 </thing:thing-descriptions>
