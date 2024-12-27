@@ -15,9 +15,6 @@ package org.openhab.binding.stiebelheatpump.protocol;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 /**
  * request class for Stiebel heat pump.
  *
@@ -25,20 +22,17 @@ import org.slf4j.LoggerFactory;
  */
 public class Request {
 
-    private Logger logger = LoggerFactory.getLogger(Request.class);
     private String name;
     private String description;
     private byte[] requestByte;
+    private byte[] requestByte2;
     private List<RecordDefinition> recordDefinitionList;
 
-    public Request() {
-        this.recordDefinitionList = new ArrayList<>();
-    }
-
-    public Request(String name, String description, byte[] requestByte) {
+    public Request(String name, String description, byte[] requestByte, byte[] requestByte2) {
         this.name = name;
         this.description = description;
         this.requestByte = requestByte;
+        this.requestByte2 = requestByte2;
         this.recordDefinitionList = new ArrayList<>();
     }
 
@@ -46,32 +40,20 @@ public class Request {
         return name;
     }
 
-    public void setName(String name) {
-        this.name = name;
-    }
-
     public String getDescription() {
         return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
     }
 
     public byte[] getRequestByte() {
         return requestByte;
     }
 
-    public void setRequestByte(byte[] requestByte) {
-        this.requestByte = requestByte;
+    public byte[] getRequestByte2() {
+        return requestByte2;
     }
 
     public List<RecordDefinition> getRecordDefinitions() {
         return recordDefinitionList;
-    }
-
-    public void setRecordDefinitions(List<RecordDefinition> recordDefinitions) {
-        this.recordDefinitionList = recordDefinitions;
     }
 
     public RecordDefinition getRecordDefinitionByChannelId(String channelId) {

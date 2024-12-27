@@ -30,6 +30,8 @@ public class RecordDefinition {
 
     private byte[] requestByte;
 
+    private byte[] requestByte2;
+
     private Type dataType;
 
     private int position;
@@ -168,6 +170,14 @@ public class RecordDefinition {
 
     public void setRequestByte(byte[] requestByte) {
         this.requestByte = requestByte;
+    }
+
+    public byte[] getRequestByte2() {
+        return requestByte2;
+    }
+
+    public void setRequestByte2(byte[] requestByte2) {
+        this.requestByte2 = requestByte2;
     }
 
     public int getPosition() {
