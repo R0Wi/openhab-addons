@@ -32,7 +32,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Pattern;
 
 import javax.measure.quantity.Dimensionless;
-import javax.measure.quantity.Power;
+import javax.measure.quantity.Energy;
 import javax.measure.quantity.Temperature;
 
 import org.openhab.binding.stiebelheatpump.protocol.DataParser;
@@ -40,6 +40,7 @@ import org.openhab.binding.stiebelheatpump.protocol.RecordDefinition;
 import org.openhab.binding.stiebelheatpump.protocol.RecordDefinition.Type;
 import org.openhab.binding.stiebelheatpump.protocol.Request;
 import org.openhab.binding.stiebelheatpump.protocol.Requests;
+import org.openhab.binding.stiebelheatpump.protocol.SerialConnector;
 import org.openhab.core.io.transport.serial.SerialPortIdentifier;
 import org.openhab.core.io.transport.serial.SerialPortManager;
 import org.openhab.core.library.types.DecimalType;
@@ -123,8 +124,7 @@ public class StiebelHeatPumpHandler extends BaseThingHandler {
                         if (request == null) {
                             String requestStr = DataParser.bytesToHex(debugBytes);
                             logger.debug("Could not find request for {} in the thingtype definition.", requestStr);
-                            request = new Request();
-                            request.setRequestByte(debugBytes);
+                            request = new Request("Debug", "Debug dump response", debugBytes, null);
                         }
                         communicationService.dumpResponse(request);
                         Thread.sleep(config.waitingTime);
@@ -210,7 +210,7 @@ public class StiebelHeatPumpHandler extends BaseThingHandler {
         if (heatPumpConfiguration.getRequests().isEmpty()) {
             // get the records from the thing-type configuration file
             String configFile = getThing().getThingTypeUID().getId();
-            ConfigLocator configLocator = new ConfigLocator(configFile + ".xml");
+            ConfigLocator configLocator = new ConfigLocator(configFile + ".xml", new ConfigFileLoader());
             heatPumpConfiguration.setRequests(configLocator.getRequests());
         }
         categorizeHeatPumpConfiguration();
@@ -235,7 +235,7 @@ public class StiebelHeatPumpHandler extends BaseThingHandler {
         }
 
         communicationService = new CommunicationService(serialPortManager, config.port, config.baudRate,
-                config.waitingTime, scheduler);
+                config.waitingTime, new SerialConnector(scheduler));
 
         scheduler.schedule(() -> this.getInitialHeatPumpSettings(), 0, TimeUnit.SECONDS);
         updateStatus(ThingStatus.UNKNOWN, ThingStatusDetail.HANDLER_CONFIGURATION_PENDING,
@@ -443,8 +443,7 @@ public class StiebelHeatPumpHandler extends BaseThingHandler {
                     updateState(channelUID, temperature);
                     break;
                 case "Number:Energy":
-                    // TODO: how to make this kW as these are coming from heatpump
-                    QuantityType<Power> energy = new QuantityType<>(value, Units.WATT);
+                    QuantityType<Energy> energy = new QuantityType<>(value, Units.WATT_HOUR);
                     updateState(channelUID, energy);
                     break;
                 case "Number:Dimensionless:Percent":

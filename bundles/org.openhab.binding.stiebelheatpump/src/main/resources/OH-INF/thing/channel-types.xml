@@ -472,4 +472,10 @@
 			</options>
 		</state>
 	</channel-type>
+	<channel-type id="electricalEnergyWh">
+		<item-type unitHint="Wh">Number:Energy</item-type>
+		<label>Electrical Energy</label>
+		<description>Electrical Energy</description>
+		<state readOnly="true" pattern="%.1f %unit%"/>
+	</channel-type>
 </thing:thing-descriptions>
