@@ -976,4 +976,18 @@
 			</channel>
 		</channels>
 	</channel-group-type>
+	<channel-group-type id="channelGroupTypeEnergy">
+		<label>Energy</label>
+		<description>Reads energy values of the heat pump.</description>
+		<channels>
+			<channel id="electrDHWDay" typeId="electricalEnergyWh">
+				<label>Electrical energy DHW day</label>
+				<description>Electrical energy used today for domestic hot water</description>
+			</channel>
+			<channel id="electrHCDay" typeId="electricalEnergyWh">
+				<label>Electrical energy HC day</label>
+				<description>Electrical energy used today for heating</description>
+			</channel>
+		</channels>
+	</channel-group-type>
 </thing:thing-descriptions>
