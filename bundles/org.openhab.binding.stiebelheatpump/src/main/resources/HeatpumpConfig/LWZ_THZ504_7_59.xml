@@ -179,4 +179,8 @@
 		bitPosition="0" min="0" max="0" step="0.0"></record>
 	<record channelid="seasonMode" requestByte="F4" dataType="Sensor" position="21" length="1" scale="1.0"
 		bitPosition="0" min="0" max="0" step="0.0"></record>
+	<record channelid="electrDHWDay" requestByte="0A091A" requestByte2="0A091B" dataType="Sensor" position="6"
+		length="2" scale="1.0" bitPosition="0" min="0" max="0" step="0.0" unit="Wh"></record>
+	<record channelid="electrHCDay" requestByte="0A091E" requestByte2="0A091F" dataType="Sensor" position="6"
+		length="2" scale="1.0" bitPosition="0" min="0" max="0" step="0.0" unit="Wh"></record>
 </records>

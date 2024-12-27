@@ -33,10 +33,6 @@ public class Requests {
     public Requests() {
     }
 
-    public Requests(List<Request> requests) {
-        this.requestList.addAll(requests);
-    }
-
     public List<Request> getRequests() {
         return requestList;
     }

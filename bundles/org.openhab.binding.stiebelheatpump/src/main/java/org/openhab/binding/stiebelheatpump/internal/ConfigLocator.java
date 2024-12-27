@@ -17,7 +17,6 @@ import java.util.List;
 
 import org.openhab.binding.stiebelheatpump.protocol.Request;
 import org.openhab.binding.stiebelheatpump.protocol.Requests;
-import org.osgi.framework.FrameworkUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,13 +30,11 @@ public class ConfigLocator {
 
     private static final Logger logger = LoggerFactory.getLogger(ConfigLocator.class);
 
-    private String file;
+    private final IConfigFileLoader configFileLoader;
+    private final String file;
     private ConfigParser configParser = new ConfigParser();
     private Records records = new Records();
     private Requests requests = new Requests();
-
-    public ConfigLocator() {
-    }
 
     /**
      * @param file
@@ -46,8 +43,9 @@ public class ConfigLocator {
      *            version naming convention shall be "thingtypenid.xml" , e.g.
      *            LWZ_THZ303_2_06.xml
      */
-    public ConfigLocator(String file) {
+    public ConfigLocator(String file, IConfigFileLoader configFileLoader) {
         this.file = file;
+        this.configFileLoader = configFileLoader;
         getconfig();
     }
 
@@ -59,7 +57,7 @@ public class ConfigLocator {
     public void getconfig() {
         logger.debug("Parsing  heat pump configuration file {}.", file);
 
-        URL entry = FrameworkUtil.getBundle(ConfigParser.class).getEntry("HeatpumpConfig/" + file);
+        URL entry = configFileLoader.getConfig(file);
         if (entry == null) {
             logger.error("Unable to load  {} config file of heatpump!", file);
             return;

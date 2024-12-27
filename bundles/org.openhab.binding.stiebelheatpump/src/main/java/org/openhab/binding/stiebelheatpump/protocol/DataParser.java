@@ -68,13 +68,35 @@ public class DataParser {
      * @return Map of Strings with name and values
      */
     public Map<String, Object> parseRecords(final byte[] response, Request request) throws StiebelHeatPumpException {
+        return parseRecords(response, null, request);
+    }
 
+    /**
+     * verifies response on availability of data
+     *
+     * @param response
+     *            of heat pump
+     * @param response2
+     *            of heat pump. Only set if two requests are needed to query the data.
+     * @param requestresponse
+     *            request defined for heat pump response
+     * @return Map of Strings with name and values
+     */
+    public Map<String, Object> parseRecords(final byte[] response, final byte[] response2, Request request)
+            throws StiebelHeatPumpException {
         Map<String, Object> map = new HashMap<>();
         String bytes = bytesToHex(response, true);
+        String bytes2 = response2 != null ? bytesToHex(response2, true) : "<empty>";
+
         logger.debug("Parse bytes: {}", bytes);
+        logger.debug("Parse bytes2: {}", bytes2);
 
         if (response.length < 2) {
             logger.error("response does not have a valid length of bytes: {}", bytes);
+            return map;
+        }
+        if (response2 != null && response2.length < 2) {
+            logger.error("response2 does not have a valid length of bytes: {}", bytes2);
             return map;
         }
 
@@ -82,6 +104,10 @@ public class DataParser {
         for (RecordDefinition recordDefinition : request.getRecordDefinitions()) {
             try {
                 Object value = parseRecord(response, recordDefinition);
+                if (response2 != null && value instanceof Short valueShort) {
+                    short value2 = (short) parseRecord(response2, recordDefinition);
+                    value = (short) (value2 * 1000 + valueShort);
+                }
                 String channel = recordDefinition.getChannelid();
                 logger.debug("Parsed value {} -> {} with pos: {} , len: {}", channel, value,
                         recordDefinition.getPosition(), recordDefinition.getLength());

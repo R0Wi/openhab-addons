@@ -22,13 +22,11 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ScheduledExecutorService;
 
 import org.openhab.binding.stiebelheatpump.protocol.DataParser;
 import org.openhab.binding.stiebelheatpump.protocol.ProtocolConnector;
 import org.openhab.binding.stiebelheatpump.protocol.RecordDefinition;
 import org.openhab.binding.stiebelheatpump.protocol.Request;
-import org.openhab.binding.stiebelheatpump.protocol.SerialConnector;
 import org.openhab.core.io.transport.serial.SerialPortManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,12 +51,12 @@ public class CommunicationService {
     private int waitingTime = 1200;
 
     public CommunicationService(SerialPortManager serialPortManager, String serialPortName, int baudRate,
-            int waitingTime, ScheduledExecutorService scheduler) {
+            int waitingTime, ProtocolConnector connector) {
         this.waitingTime = waitingTime;
         this.baudRate = baudRate;
         this.serialPortName = serialPortName;
         this.serialPortManager = serialPortManager;
-        this.connector = new SerialConnector(scheduler);
+        this.connector = connector;
     }
 
     public void finalizer() {
@@ -206,8 +204,10 @@ public class CommunicationService {
         Map<String, Object> data = new HashMap<>();
         String requestStr = DataParser.bytesToHex(request.getRequestByte(), false);
         logger.debug("RequestByte -> {}", requestStr);
-        byte[] responseAvailable;
-        byte[] requestMessage = createRequestMessage(request.getRequestByte());
+        if (request.getRequestByte2() != null) {
+            String requestStr2 = DataParser.bytesToHex(request.getRequestByte2(), false);
+            logger.debug("RequestByte2 -> {}", requestStr2);
+        }
 
         boolean success = false;
         int count = 0;
@@ -215,9 +215,17 @@ public class CommunicationService {
         while (!success && count++ < MAX_TRIES) {
             try {
                 startCommunication();
-                responseAvailable = getData(requestMessage);
+                byte[] responseAvailable = getData(createRequestMessage(request.getRequestByte()));
                 if (parser.headerCheck(responseAvailable)) {
-                    return parser.parseRecords(responseAvailable, request);
+                    // single request
+                    if (request.getRequestByte2() == null) {
+                        return parser.parseRecords(responseAvailable, request);
+                    }
+                    // two requests for one value
+                    byte[] responseAvailable2 = getData(createRequestMessage(request.getRequestByte2()));
+                    if (parser.headerCheck(responseAvailable2)) {
+                        return parser.parseRecords(responseAvailable, responseAvailable2, request);
+                    }
                 }
                 success = true;
             } catch (StiebelHeatPumpException e) {
