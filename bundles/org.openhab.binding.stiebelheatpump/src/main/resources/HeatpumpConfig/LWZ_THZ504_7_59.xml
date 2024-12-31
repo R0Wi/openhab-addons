@@ -145,6 +145,7 @@
 		scale="0.1" bitPosition="0" min="10" max="65" step="0.1"></record>
 	<record channelid="p12FanStageManual" requestByte="17" dataType="Settings" position="23" length="1" scale="1.0"
 		bitPosition="0" min="0" max="3" step="1.0"></record>
+
 	<record channelid="p99CoolingHC1Switch" requestByte="0B0287" dataType="Settings" position="7" length="1"
 		scale="1.0" bitPosition="7" min="0" max="1" step="1.0"></record>
 
@@ -179,6 +180,9 @@
 		bitPosition="0" min="0" max="0" step="0.0"></record>
 	<record channelid="seasonMode" requestByte="F4" dataType="Sensor" position="21" length="1" scale="1.0"
 		bitPosition="0" min="0" max="0" step="0.0"></record>
+	<record channelid="heatSetpointTemperatureHC1" requestByte="F4" dataType="Sensor" position="14" length="2"
+		scale="0.1" bitPosition="0" min="0" max="0" step="0.0"></record>
+
 	<record channelid="electrDHWDay" requestByte="0A091A" requestByte2="0A091B" dataType="Sensor" position="6"
 		length="2" scale="1.0" bitPosition="0" min="0" max="0" step="0.0" unit="Wh"></record>
 	<record channelid="electrHCDay" requestByte="0A091E" requestByte2="0A091F" dataType="Sensor" position="6"
