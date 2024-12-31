@@ -196,7 +196,9 @@ public class CommunicationServiceTests {
                         Map.of("electrHCDay", (short) 7069)),
                 Arguments.of("F4",
                         "01005AF400810000011400000119010F011500000101600800640100000000D40000000000E30200000000071003",
-                        null, Map.of("insideTemperatureRC", 22.7d, "seasonMode", (short) 1)),
+                        null,
+                        Map.of("insideTemperatureRC", 22.7d, "seasonMode", (short) 1, "heatSetpointTemperatureHC1",
+                                27.1d)),
                 Arguments.of("0B0287", "0100960B028700011003", null, Map.of("p99CoolingHC1Switch", true)),
                 Arguments.of("0A0176", "0100990a01760413", null, expectedDisplayResponse));
     }

@@ -974,6 +974,10 @@
 				<label>Season mode for HC1</label>
 				<description>Season mode for HC1 (Summer or Winter)</description>
 			</channel>
+			<channel id="heatSetpointTemperatureHC1" typeId="temperature">
+				<label>Heating setpoint temperature for HC1</label>
+				<description>Heating setpoint temperature for HC1 (depending on heatcurve)</description>
+			</channel>
 		</channels>
 	</channel-group-type>
 	<channel-group-type id="channelGroupTypeEnergy">
