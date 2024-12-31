@@ -188,18 +188,22 @@ public class CommunicationServiceTests {
                 Map.entry("Service", false), Map.entry("FilterUp", false), Map.entry("FilterBoth", false),
                 Map.entry("HeatingHc", false), Map.entry("VentStage", false), Map.entry("SwitchingProgram", true),
                 Map.entry("HeatingDhw", true), Map.entry("Defrost", false));
+        var expectedFbResponse = Map.ofEntries(Map.entry("extractFanSpeed", (short) 25),
+                Map.entry("supplyFanSpeed", (short) 34), Map.entry("exhaustFanSpeed", (short) 0));
+        var expectedF4Response = Map.ofEntries(Map.entry("insideTemperatureRC", 22.7d),
+                Map.entry("seasonMode", (short) 1), Map.entry("heatSetpointTemperatureHC1", 27.1d));
+
+        var fbHexResponse = "01006AFBFDA8FFF4019B018C027602048001FDA800C401A9600807012C012C0000001900220000FFF5010F0000033F08E10000000000000000055400BE00000000019301A201D90196017A0000000007271003";
+        var f4HexResponse = "01005AF400810000011400000119010F011500000101600800640100000000D40000000000E30200000000071003";
 
         return Stream.of(
                 Arguments.of("0A091A", "01002E0A091A01FF1003", "0100300A091B00011003",
                         Map.of("electrDHWDay", (short) 1511)),
                 Arguments.of("0A091E", "0100770A091E00451003", "01003A0A091F00071003",
                         Map.of("electrHCDay", (short) 7069)),
-                Arguments.of("F4",
-                        "01005AF400810000011400000119010F011500000101600800640100000000D40000000000E30200000000071003",
-                        null,
-                        Map.of("insideTemperatureRC", 22.7d, "seasonMode", (short) 1, "heatSetpointTemperatureHC1",
-                                27.1d)),
+                Arguments.of("F4", f4HexResponse, null, expectedF4Response),
                 Arguments.of("0B0287", "0100960B028700011003", null, Map.of("p99CoolingHC1Switch", true)),
-                Arguments.of("0A0176", "0100990a01760413", null, expectedDisplayResponse));
+                Arguments.of("0A0176", "0100990a01760413", null, expectedDisplayResponse),
+                Arguments.of("FB", fbHexResponse, null, expectedFbResponse));
     }
 }
