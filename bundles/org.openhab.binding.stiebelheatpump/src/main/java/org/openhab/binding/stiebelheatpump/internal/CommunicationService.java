@@ -68,6 +68,14 @@ public class CommunicationService {
             connector.connect(serialPortManager, serialPortName, baudRate);
         } catch (StiebelHeatPumpException e) {
             logger.error("Could not connect to heatpump", e);
+            if (e instanceof SerialPortNotFoundException) {
+                try {
+                    logger.info("Sleeping for 30s");
+                    Thread.sleep(30000);
+                } catch (InterruptedException e1) {
+                    logger.error("Interrupted", e1);
+                }
+            }
         }
     }
 

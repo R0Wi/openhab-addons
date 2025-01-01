@@ -15,10 +15,10 @@ package org.openhab.binding.stiebelheatpump.protocol;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.stream.Stream;
 
 import org.eclipse.jdt.annotation.NonNull;
+import org.openhab.binding.stiebelheatpump.internal.SerialPortNotFoundException;
 import org.openhab.binding.stiebelheatpump.internal.StiebelHeatPumpException;
 import org.openhab.core.io.transport.serial.SerialPort;
 import org.openhab.core.io.transport.serial.SerialPortIdentifier;
@@ -44,16 +44,17 @@ public class SerialConnector implements ProtocolConnector {
     ByteStreamPipe byteStreamPipe = null;
 
     private CircularByteBuffer buffer;
-    private ScheduledExecutorService scheduler;
 
-    public SerialConnector(ScheduledExecutorService scheduler) {
-        this.scheduler = scheduler;
+    public SerialConnector() {
     }
 
     @Override
     public void connect(SerialPortManager portManager, String device, int baudrate) throws StiebelHeatPumpException {
         try {
             SerialPortIdentifier portIdentifier = portManager.getIdentifier(device);
+            if (portIdentifier == null) {
+                throw new SerialPortNotFoundException(device);
+            }
             SerialPort commPort = portIdentifier.open(this.getClass().getName(), 2000);
             serialPort = commPort;
             setSerialPortParameters(baudrate);
@@ -64,7 +65,7 @@ public class SerialConnector implements ProtocolConnector {
             out.flush();
 
             buffer = new CircularByteBuffer(Byte.MAX_VALUE * Byte.MAX_VALUE + 2 * Byte.MAX_VALUE);
-            byteStreamPipe = new ByteStreamPipe(in, buffer, scheduler);
+            byteStreamPipe = new ByteStreamPipe(in, buffer);
             byteStreamPipe.startTask();
 
         } catch (IOException e) {
@@ -74,7 +75,7 @@ public class SerialConnector implements ProtocolConnector {
                     "Serial port " + device + "with given name does not exist. Available ports: " + ports.toString(),
                     e);
         } catch (Exception e) {
-            throw new StiebelHeatPumpException("Could not init port : " + e.getMessage());
+            throw new StiebelHeatPumpException("Could not init port : " + e.getMessage(), e);
         }
     }
 
@@ -86,8 +87,6 @@ public class SerialConnector implements ProtocolConnector {
         }
 
         logger.debug("Close serial stream");
-        // try {
-        // out.close();
         if (buffer != null) {
             buffer.stop();
         }
@@ -95,14 +94,6 @@ public class SerialConnector implements ProtocolConnector {
         if (serialPort != null) {
             serialPort.close();
         }
-        // try {
-        // Thread.sleep(1000);
-        // } catch (InterruptedException e) {
-        // }
-        // } catch (IOException e) {
-        // logger.warn("Could not fully shut down heat pump driver", e);
-        // }
-        this.scheduler = null;
 
         logger.debug("Disconnected");
     }
