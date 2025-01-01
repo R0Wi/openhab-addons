@@ -71,6 +71,7 @@ import org.slf4j.LoggerFactory;
 public class StiebelHeatPumpHandler extends BaseThingHandler {
 
     private static final Duration RETRY_PORT_DELAY = Duration.ofSeconds(10);
+    private static final int RETRY_PORT_RETRIES = 3;
 
     private Logger logger = LoggerFactory.getLogger(StiebelHeatPumpHandler.class);
     private final SerialPortManager serialPortManager;
@@ -93,6 +94,7 @@ public class StiebelHeatPumpHandler extends BaseThingHandler {
     ScheduledFuture<?> timeRefreshJob;
 
     ScheduledFuture<?> retryOpenPortJob;
+    private int retryPortCounter = 0;
 
     public StiebelHeatPumpHandler(Thing thing, final SerialPortManager serialPortManager) {
         super(thing);
@@ -221,21 +223,31 @@ public class StiebelHeatPumpHandler extends BaseThingHandler {
             return;
         }
 
+        Runnable cancelRetryOpenPortJob = () -> {
+            if (retryOpenPortJob != null && !retryOpenPortJob.isCancelled()) {
+                retryOpenPortJob.cancel(true);
+                retryOpenPortJob = null;
+            }
+        };
+
         SerialPortIdentifier portId = serialPortManager.getIdentifier(config.port);
         if (portId == null) {
             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.OFFLINE.CONFIGURATION_ERROR, "Port is not known!");
+            if (retryPortCounter >= RETRY_PORT_RETRIES) {
+                logger.error("Serial port {} was not found after {} retries.", config.port, RETRY_PORT_RETRIES);
+                cancelRetryOpenPortJob.run();
+                return;
+            }
             logger.debug("Serial port {} was not found, retrying in {}.", config.port, RETRY_PORT_DELAY);
             retryOpenPortJob = scheduler.schedule(this::initialize, RETRY_PORT_DELAY.getSeconds(), TimeUnit.SECONDS);
             return;
         }
 
-        if (retryOpenPortJob != null) {
-            retryOpenPortJob.cancel(true);
-            retryOpenPortJob = null;
-        }
+        retryPortCounter = 0;
+        cancelRetryOpenPortJob.run();
 
         communicationService = new CommunicationService(serialPortManager, config.port, config.baudRate,
-                config.waitingTime, new SerialConnector(scheduler));
+                config.waitingTime, new SerialConnector());
 
         scheduler.schedule(() -> this.getInitialHeatPumpSettings(), 0, TimeUnit.SECONDS);
         updateStatus(ThingStatus.UNKNOWN, ThingStatusDetail.HANDLER_CONFIGURATION_PENDING,
