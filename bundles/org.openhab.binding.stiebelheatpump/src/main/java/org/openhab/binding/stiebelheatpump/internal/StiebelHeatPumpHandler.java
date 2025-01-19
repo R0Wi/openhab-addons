@@ -26,6 +26,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
@@ -35,6 +36,7 @@ import javax.measure.quantity.Dimensionless;
 import javax.measure.quantity.Energy;
 import javax.measure.quantity.Temperature;
 
+import org.eclipse.jdt.annotation.Nullable;
 import org.openhab.binding.stiebelheatpump.protocol.DataParser;
 import org.openhab.binding.stiebelheatpump.protocol.RecordDefinition;
 import org.openhab.binding.stiebelheatpump.protocol.RecordDefinition.Type;
@@ -43,6 +45,7 @@ import org.openhab.binding.stiebelheatpump.protocol.Requests;
 import org.openhab.binding.stiebelheatpump.protocol.SerialConnector;
 import org.openhab.core.io.transport.serial.SerialPortIdentifier;
 import org.openhab.core.io.transport.serial.SerialPortManager;
+import org.openhab.core.library.types.DateTimeType;
 import org.openhab.core.library.types.DecimalType;
 import org.openhab.core.library.types.OnOffType;
 import org.openhab.core.library.types.OpenClosedType;
@@ -75,8 +78,11 @@ public class StiebelHeatPumpHandler extends BaseThingHandler {
 
     private Logger logger = LoggerFactory.getLogger(StiebelHeatPumpHandler.class);
     private final SerialPortManager serialPortManager;
+    private final ConfigFileLoader configFileLoader;
+    private final CommunicationServiceFactory communicationServiceFactory;
+    private final ScheduledExecutorService scheduledExecutorService;
     private StiebelHeatPumpConfiguration config;
-    CommunicationService communicationService;
+    private CommunicationService communicationService;
     // volatile AtomicBoolean communicationInUse = new AtomicBoolean(false);
     private ReentrantLock communicationInUse = new ReentrantLock();
 
@@ -96,9 +102,22 @@ public class StiebelHeatPumpHandler extends BaseThingHandler {
     ScheduledFuture<?> retryOpenPortJob;
     private int retryPortCounter = 0;
 
-    public StiebelHeatPumpHandler(Thing thing, final SerialPortManager serialPortManager) {
+    public StiebelHeatPumpHandler(Thing thing, final SerialPortManager serialPortManager,
+            final ConfigFileLoader configFileLoader, final CommunicationServiceFactory communicationServiceFactory,
+            final @Nullable ScheduledExecutorService scheduledExecutorService) {
         super(thing);
         this.serialPortManager = serialPortManager;
+        this.configFileLoader = configFileLoader;
+        this.communicationServiceFactory = communicationServiceFactory;
+        this.scheduledExecutorService = (scheduledExecutorService != null) ? scheduledExecutorService : scheduler; // used
+                                                                                                                   // for
+                                                                                                                   // unit
+                                                                                                                   // testing
+    }
+
+    public StiebelHeatPumpHandler(Thing thing, final SerialPortManager serialPortManager,
+            final ConfigFileLoader configFileLoader, final CommunicationServiceFactory communicationServiceFactory) {
+        this(thing, serialPortManager, configFileLoader, communicationServiceFactory, null);
     }
 
     @Override
@@ -212,7 +231,7 @@ public class StiebelHeatPumpHandler extends BaseThingHandler {
         if (heatPumpConfiguration.getRequests().isEmpty()) {
             // get the records from the thing-type configuration file
             String configFile = getThing().getThingTypeUID().getId();
-            ConfigLocator configLocator = new ConfigLocator(configFile + ".xml", new ConfigFileLoader());
+            ConfigLocator configLocator = new ConfigLocator(configFile + ".xml", configFileLoader);
             heatPumpConfiguration.setRequests(configLocator.getRequests());
         }
         categorizeHeatPumpConfiguration();
@@ -239,17 +258,18 @@ public class StiebelHeatPumpHandler extends BaseThingHandler {
                 return;
             }
             logger.debug("Serial port {} was not found, retrying in {}.", config.port, RETRY_PORT_DELAY);
-            retryOpenPortJob = scheduler.schedule(this::initialize, RETRY_PORT_DELAY.getSeconds(), TimeUnit.SECONDS);
+            retryOpenPortJob = scheduledExecutorService.schedule(this::initialize, RETRY_PORT_DELAY.getSeconds(),
+                    TimeUnit.SECONDS);
             return;
         }
 
         retryPortCounter = 0;
         cancelRetryOpenPortJob.run();
 
-        communicationService = new CommunicationService(serialPortManager, config.port, config.baudRate,
+        communicationService = communicationServiceFactory.create(serialPortManager, config.port, config.baudRate,
                 config.waitingTime, new SerialConnector());
 
-        scheduler.schedule(() -> this.getInitialHeatPumpSettings(), 0, TimeUnit.SECONDS);
+        scheduledExecutorService.schedule(() -> this.getInitialHeatPumpSettings(), 0, TimeUnit.SECONDS);
         updateStatus(ThingStatus.UNKNOWN, ThingStatusDetail.HANDLER_CONFIGURATION_PENDING,
                 "Waiting for messages from device");
     }
@@ -275,7 +295,6 @@ public class StiebelHeatPumpHandler extends BaseThingHandler {
         if (communicationService != null) {
             communicationService.disconnect();
         }
-        // communicationInUse.set(false);
         if (communicationInUse.isLocked()) {
             communicationInUse.unlock();
         }
@@ -343,14 +362,14 @@ public class StiebelHeatPumpHandler extends BaseThingHandler {
     }
 
     private void startHeatpumpCommunication() {
-        communicateWithHeatPumpJob = scheduler.scheduleWithFixedDelay(() -> {
+        communicateWithHeatPumpJob = scheduledExecutorService.scheduleWithFixedDelay(() -> {
             Instant start = Instant.now();
             if (scheduledRequests.getRequests().isEmpty()) {
                 logger.debug("nothing to update, refresh list is empty");
                 return;
             }
 
-            Map<String, Object> data = sendRequests(scheduledRequests.getRequests());
+            sendRequestsAndUpdateChannels(scheduledRequests.getRequests());
 
             Instant end = Instant.now();
             logger.debug("Data refresh took {} seconds.", Duration.between(start, end).getSeconds());
@@ -358,23 +377,19 @@ public class StiebelHeatPumpHandler extends BaseThingHandler {
         }, 10, config.refresh, TimeUnit.SECONDS);
     }
 
-    private Map<String, Object> sendRequests(List<Request> requests) {
-        Map<String, Object> data = new HashMap<>();
-        // communicationInUse.set(true);
+    private void sendRequestsAndUpdateChannels(List<Request> requests) {
         communicationInUse.lock();
         logger.debug("Refresh data of heat pump.");
         try {
-            data = communicationService.getRequestData(requests);
+            Map<String, Object> data = communicationService.getRequestData(requests);
             // do the channel update immediately within the communicationInUse guard to avoid clashing TODO
             updateChannels(data);
         } catch (Exception e) {
             logger.error("Exception occurred during execution of sendRequests.", e);
             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.OFFLINE.COMMUNICATION_ERROR, e.getMessage());
         } finally {
-            // communicationInUse.set(false);
             communicationInUse.unlock();
         }
-        return data;
     }
 
     /**
@@ -382,7 +397,7 @@ public class StiebelHeatPumpHandler extends BaseThingHandler {
      * once a week
      */
     private void startTimeRefresh() {
-        timeRefreshJob = scheduler.scheduleWithFixedDelay(() -> {
+        timeRefreshJob = scheduledExecutorService.scheduleWithFixedDelay(() -> {
 
             communicationInUse.lock();
             logger.debug("Refresh time of heat pump.");
@@ -419,6 +434,10 @@ public class StiebelHeatPumpHandler extends BaseThingHandler {
             if (channelType.equalsIgnoreCase(CHANNELTYPE_TIMESETTING)
                     | channelType.equalsIgnoreCase(CHANNELTYPE_ERRORTIME)) {
                 updateTimeChannel(entry.getValue().toString(), channelUID);
+                continue;
+            }
+            if (channelType.equalsIgnoreCase(CHANNELTYPE_TIMESETTING_QUATER)) {
+                updateTimeQuaterChannel((Number) entry.getValue(), channelUID);
                 continue;
             }
             if (channelType.equalsIgnoreCase(CHANNELTYPE_ERRORDATE)) {
@@ -504,6 +523,19 @@ public class StiebelHeatPumpHandler extends BaseThingHandler {
         String newDate = String.format("%04d", Integer.parseInt(dateString));
         newDate = new StringBuilder(newDate).insert(newDate.length() - 2, "-").toString();
         updateState(channelUID, new StringType(newDate));
+    }
+
+    private void updateTimeQuaterChannel(Number value, ChannelUID channelUID) {
+        var fullHours = value.intValue() / 4;
+        if (fullHours >= 24) {
+            // A slot which is not set normally has value 130 (32,5h)
+            // but if the value is 24 or higher, we set the channel to NULL
+            updateState(channelUID, null);
+            return;
+        }
+        var minutes = (value.intValue() % 4) * 15;
+        var newTime = new DateTimeType(String.format("%02d:%02d", fullHours, minutes));
+        updateState(channelUID, newTime);
     }
 
     private void updateRespondChannel(String responds) {
@@ -594,8 +626,7 @@ public class StiebelHeatPumpHandler extends BaseThingHandler {
 
             if (refreshNow) {
                 List<Request> requestList = Collections.singletonList(request);
-                Map<String, Object> data = sendRequests(requestList);
-                updateChannels(data);
+                sendRequestsAndUpdateChannels(requestList);
             }
         }
     }

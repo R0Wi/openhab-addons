@@ -54,6 +54,7 @@ public class StiebelHeatPumpBindingConstants {
     public static final String CHANNEL_FAN_STAGE_NIGHT = "tecalorDebug" + CHANNELGROUPSEPERATOR + "fanStageNight";
 
     public static final String CHANNELTYPE_TIMESETTING = BINDING_ID + ":" + "timeSetting";
+    public static final String CHANNELTYPE_TIMESETTING_QUATER = BINDING_ID + ":" + "timeSettingQuater";
     public static final String CHANNELTYPE_SWITCHSETTING = BINDING_ID + ":" + "switchSetting";
     public static final String CHANNELTYPE_CONTACTSTATUS = BINDING_ID + ":" + "contactStatus";
     public static final String CHANNELTYPE_ERRORTIME = BINDING_ID + ":" + "errorTime";

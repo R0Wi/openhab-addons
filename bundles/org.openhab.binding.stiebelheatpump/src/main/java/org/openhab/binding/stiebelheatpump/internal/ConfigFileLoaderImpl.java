@@ -14,9 +14,15 @@ package org.openhab.binding.stiebelheatpump.internal;
 
 import java.net.URL;
 
+import org.osgi.framework.FrameworkUtil;
+
 /**
  * @author Robin Windey
  */
-public interface IConfigFileLoader {
-    URL getConfig(String file);
+public class ConfigFileLoaderImpl implements ConfigFileLoader {
+
+    @Override
+    public URL getConfig(String file) {
+        return FrameworkUtil.getBundle(ConfigFileLoaderImpl.class).getEntry("HeatpumpConfig/" + file);
+    }
 }

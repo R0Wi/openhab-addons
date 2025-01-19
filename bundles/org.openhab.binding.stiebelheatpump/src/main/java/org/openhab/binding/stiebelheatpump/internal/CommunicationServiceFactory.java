@@ -12,11 +12,14 @@
  */
 package org.openhab.binding.stiebelheatpump.internal;
 
-import java.net.URL;
+import org.openhab.binding.stiebelheatpump.protocol.ProtocolConnector;
+import org.openhab.core.io.transport.serial.SerialPortManager;
 
 /**
  * @author Robin Windey
  */
-public interface ConfigFileLoader {
-    URL getConfig(String file);
+@FunctionalInterface
+public interface CommunicationServiceFactory {
+    CommunicationService create(SerialPortManager serialPortManager, String serialPortName, int baudRate,
+            int waitingTime, ProtocolConnector connector);
 }
