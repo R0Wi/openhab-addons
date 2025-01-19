@@ -48,6 +48,7 @@ import org.openhab.core.thing.ThingUID;
 import org.openhab.core.thing.binding.ThingHandlerCallback;
 import org.openhab.core.thing.type.ChannelTypeUID;
 import org.openhab.core.types.State;
+import org.openhab.core.types.UnDefType;
 
 /**
  * Test for StiebelHeatPumpHandler class.
@@ -124,7 +125,8 @@ public class StiebelHeatPumpHandlerTest {
                 Map.entry("Service", false), Map.entry("FilterUp", false), Map.entry("FilterBoth", false),
                 Map.entry("HeatingHc", false), Map.entry("VentStage", false), Map.entry("SwitchingProgram", true),
                 Map.entry("HeatingDhw", true), Map.entry("Defrost", false), Map.entry("programDhwMo0Start", (short) 50),
-                Map.entry("programDhwMo0End", (short) 69));
+                Map.entry("programDhwMo0End", (short) 69), Map.entry("programDhwMo1Start", (short) -128),
+                Map.entry("programDhwMo1End", (short) -128));
         when(communicationService.getRequestData(any())).thenReturn(responses);
 
         TestUtils.mockConfig(configFileLoader, configFile);
@@ -204,8 +206,11 @@ public class StiebelHeatPumpHandlerTest {
                 Map.entry("stiebelheatpump:LWZ_THZ504_7_59:StiebelHeatpumpThz504:somegroup#programDhwMo0Start",
                         new DateTimeType("1970-01-01T12:30:00.000")), // 50 / 4 = 12.5 -> 12:30
                 Map.entry("stiebelheatpump:LWZ_THZ504_7_59:StiebelHeatpumpThz504:somegroup#programDhwMo0End",
-                        new DateTimeType("1970-01-01T17:15:00.000")) // 69 / 4 = 17.25 -> 17:15
-        );
+                        new DateTimeType("1970-01-01T17:15:00.000")), // 69 / 4 = 17.25 -> 17:15
+                Map.entry("stiebelheatpump:LWZ_THZ504_7_59:StiebelHeatpumpThz504:somegroup#programDhwMo1Start",
+                        UnDefType.NULL),
+                Map.entry("stiebelheatpump:LWZ_THZ504_7_59:StiebelHeatpumpThz504:somegroup#programDhwMo1End",
+                        UnDefType.NULL));
 
         assertEquals(expectedStateUpdates.size() + 1, capturedStateUpdates.size()); // Additional value: last update
                                                                                     // time

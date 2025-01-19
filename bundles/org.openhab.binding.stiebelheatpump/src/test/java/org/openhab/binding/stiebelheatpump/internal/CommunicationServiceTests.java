@@ -17,7 +17,6 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 import java.io.ByteArrayOutputStream;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -50,14 +49,14 @@ public class CommunicationServiceTests {
 
     private @Mock SerialPortManager serialPortManager;
     private @Mock ProtocolConnector connector;
-    private @Mock IConfigFileLoader configFileLoader;
+    private @Mock ConfigFileLoader configFileLoader;
 
     @Test
     public void testSetCoolingThz504() throws Exception {
         final String channelId = "p99CoolingHC1Switch";
         final String config = "LWZ_THZ504_7_59.xml";
 
-        mockConfig(config);
+        TestUtils.mockConfig(configFileLoader, config);
 
         List<Byte> writtenBytesBuffer = new ArrayList<Byte>();
         doAnswer(invocation -> {
@@ -82,7 +81,7 @@ public class CommunicationServiceTests {
                 // Communictaion after new value has been set
                 new byte[] { DataParser.ESCAPE }, DataParser.DATAAVAILABLE, HexUtils.hexToBytes(coolingResponseNew));
 
-        CommunicationService communicationService = new CommunicationService(serialPortManager, "", 9600, 1000,
+        CommunicationServiceImpl communicationService = new CommunicationServiceImpl(serialPortManager, "", 9600, 1000,
                 connector);
         communicationService.connect();
 
@@ -116,7 +115,7 @@ public class CommunicationServiceTests {
     public void testGetValuesThz504(String request, String response1, String response2, Map<String, Object> expected)
             throws Exception {
         final String config = "LWZ_THZ504_7_59.xml";
-        mockConfig(config);
+        TestUtils.mockConfig(configFileLoader, config);
 
         final byte[] response1Bytes = HexUtils.hexToBytes(response1);
         final byte[] response2Bytes = response2 != null ? HexUtils.hexToBytes(response2) : new byte[0];
@@ -125,7 +124,7 @@ public class CommunicationServiceTests {
         setMockedMachineResponse(initialHandshake, DataParser.DATAAVAILABLE, response1Bytes, DataParser.DATAAVAILABLE,
                 response2Bytes);
 
-        CommunicationService communicationService = new CommunicationService(serialPortManager, "", 9600, 1000,
+        CommunicationServiceImpl communicationService = new CommunicationServiceImpl(serialPortManager, "", 9600, 1000,
                 connector);
         communicationService.connect();
 
@@ -134,12 +133,6 @@ public class CommunicationServiceTests {
         for (String key : expected.keySet()) {
             assertEquals(expected.get(key), result.get(key));
         }
-    }
-
-    private void mockConfig(String config) {
-        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-        URL congfigUrl = classLoader.getResource("HeatpumpConfig/" + config);
-        when(configFileLoader.getConfig(anyString())).thenReturn(congfigUrl);
     }
 
     /**
@@ -192,9 +185,12 @@ public class CommunicationServiceTests {
                 Map.entry("supplyFanSpeed", (short) 34), Map.entry("exhaustFanSpeed", (short) 0));
         var expectedF4Response = Map.ofEntries(Map.entry("insideTemperatureRC", 22.7d),
                 Map.entry("seasonMode", (short) 1), Map.entry("heatSetpointTemperatureHC1", 27.1d));
+        var expectedMoSlot1Response = Map.ofEntries(Map.entry("programDhwMo0Start", (short) 49),
+                Map.entry("programDhwMo0End", (short) 69));
 
         var fbHexResponse = "01006AFBFDA8FFF4019B018C027602048001FDA800C401A9600807012C012C0000001900220000FFF5010F0000033F08E10000000000000000055400BE00000000019301A201D90196017A0000000007271003";
         var f4HexResponse = "01005AF400810000011400000119010F011500000101600800640100000000D40000000000E30200000000071003";
+        var moSlot1Response = "0100A80A171031451003";
 
         return Stream.of(
                 Arguments.of("0A091A", "01002E0A091A01FF1003", "0100300A091B00011003",
@@ -204,6 +200,7 @@ public class CommunicationServiceTests {
                 Arguments.of("F4", f4HexResponse, null, expectedF4Response),
                 Arguments.of("0B0287", "0100960B028700011003", null, Map.of("p99CoolingHC1Switch", true)),
                 Arguments.of("0A0176", "0100990a01760413", null, expectedDisplayResponse),
-                Arguments.of("FB", fbHexResponse, null, expectedFbResponse));
+                Arguments.of("FB", fbHexResponse, null, expectedFbResponse),
+                Arguments.of("0A1710", moSlot1Response, null, expectedMoSlot1Response));
     }
 }

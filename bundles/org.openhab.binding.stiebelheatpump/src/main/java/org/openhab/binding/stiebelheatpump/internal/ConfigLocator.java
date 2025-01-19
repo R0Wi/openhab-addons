@@ -30,7 +30,7 @@ public class ConfigLocator {
 
     private static final Logger logger = LoggerFactory.getLogger(ConfigLocator.class);
 
-    private final IConfigFileLoader configFileLoader;
+    private final ConfigFileLoader configFileLoader;
     private final String file;
     private ConfigParser configParser = new ConfigParser();
     private Records records = new Records();
@@ -43,7 +43,7 @@ public class ConfigLocator {
      *            version naming convention shall be "thingtypenid.xml" , e.g.
      *            LWZ_THZ303_2_06.xml
      */
-    public ConfigLocator(String file, IConfigFileLoader configFileLoader) {
+    public ConfigLocator(String file, ConfigFileLoader configFileLoader) {
         this.file = file;
         this.configFileLoader = configFileLoader;
         getconfig();

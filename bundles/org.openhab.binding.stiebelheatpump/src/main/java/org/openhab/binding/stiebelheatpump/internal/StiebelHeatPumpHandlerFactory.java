@@ -49,7 +49,7 @@ public class StiebelHeatPumpHandlerFactory extends BaseThingHandlerFactory {
         }
     };
 
-    private SerialPortManager serialPortManager;
+    private final SerialPortManager serialPortManager;
 
     @Activate
     public StiebelHeatPumpHandlerFactory(@Reference final SerialPortManager serialPortManager) {
@@ -66,18 +66,13 @@ public class StiebelHeatPumpHandlerFactory extends BaseThingHandlerFactory {
         ThingTypeUID thingTypeUID = thing.getThingTypeUID();
 
         if (supportsThingType(thingTypeUID)) {
-            return new StiebelHeatPumpHandler(thing, serialPortManager);
+            final CommunicationServiceFactory communicationServiceFactory = (serialPortManager, serialPortName,
+                    baudRate, waitingTime, connector) -> new CommunicationServiceImpl(serialPortManager, serialPortName,
+                            baudRate, waitingTime, connector);
+            return new StiebelHeatPumpHandler(thing, serialPortManager, new ConfigFileLoaderImpl(),
+                    communicationServiceFactory);
         }
 
         return null;
-    }
-
-    @Reference
-    protected void setSerialPortManager(final SerialPortManager serialPortManager) {
-        this.serialPortManager = serialPortManager;
-    }
-
-    protected void unsetSerialPortManager(final SerialPortManager serialPortManager) {
-        this.serialPortManager = null;
     }
 }
