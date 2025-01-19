@@ -12,10 +12,7 @@
  */
 package org.openhab.binding.stiebelheatpump.protocol;
 
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-
-import org.openhab.binding.stiebelheatpump.internal.StiebelHeatPumpException;
+import org.openhab.binding.stiebelheatpump.exception.StiebelHeatPumpException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,45 +27,57 @@ public class CircularByteBuffer {
     private final Logger logger = LoggerFactory.getLogger(CircularByteBuffer.class);
 
     private static final int WAIT_MS = 10;
+    private static final int RETRY = 100;
+
+    private final byte[] buffer;
 
     private int readPos = 0;
-
     private int writePos = 0;
-
     private int currentSize = 0;
-
-    private int markedPos = 0;
-
-    private byte[] buffer;
-
     private boolean running = true;
-
-    private int retry = 100;
 
     public CircularByteBuffer(int size) {
         buffer = new byte[size];
     }
 
     public byte get() throws StiebelHeatPumpException {
+        logger.trace("get (Thread {} {})", Thread.currentThread().getId(), Thread.currentThread().getName());
         if (!waitForData()) {
-            throw new StiebelHeatPumpException("no data available!");
+            throw new StiebelHeatPumpException("No data available!");
         }
         byte result;
         synchronized (buffer) {
             result = buffer[readPos];
             currentSize--;
-            readPos++;
-            if (readPos >= buffer.length) {
+            if (++readPos >= buffer.length) {
                 readPos = 0;
             }
         }
         return result;
     }
 
+    public void put(byte b) {
+        logger.trace("put (Thread {} {})", Thread.currentThread().getId(), Thread.currentThread().getName());
+        synchronized (buffer) {
+            buffer[writePos] = b;
+            currentSize++;
+            if (++writePos >= buffer.length) {
+                writePos = 0;
+            }
+        }
+    }
+
+    public void stop() {
+        logger.trace("stop");
+        running = false;
+    }
+
     private boolean waitForData() {
+        logger.trace("waitForData");
         int timeOut = 0;
-        while (isEmpty() && timeOut < retry && running) {
+        while (isEmpty() && timeOut < RETRY && running) {
             try {
+                logger.trace("sleep");
                 Thread.sleep(WAIT_MS);
                 timeOut++;
             } catch (Exception e) {
@@ -76,53 +85,10 @@ public class CircularByteBuffer {
             }
         }
 
-        if (timeOut == retry) {
-            return false;
-        }
-        return true;
-    }
-
-    public short getShort() throws StiebelHeatPumpException {
-
-        ByteBuffer bb = ByteBuffer.allocate(2);
-        bb.order(ByteOrder.BIG_ENDIAN);
-        bb.put(get());
-        bb.put(get());
-        return bb.getShort(0);
-    }
-
-    public void get(byte[] data) throws StiebelHeatPumpException {
-
-        for (int i = 0; i < data.length; i++) {
-            data[i] = get();
-        }
-    }
-
-    public void put(byte b) {
-        synchronized (buffer) {
-            buffer[writePos] = b;
-            writePos++;
-            currentSize++;
-            if (writePos >= buffer.length) {
-                writePos = 0;
-            }
-        }
-    }
-
-    public void mark() {
-        markedPos = readPos;
-    }
-
-    public void reset() {
-        currentSize += Math.abs(readPos - markedPos);
-        readPos = markedPos;
+        return !isEmpty();
     }
 
     private boolean isEmpty() {
         return currentSize <= 0;
-    }
-
-    public void stop() {
-        running = false;
     }
 }

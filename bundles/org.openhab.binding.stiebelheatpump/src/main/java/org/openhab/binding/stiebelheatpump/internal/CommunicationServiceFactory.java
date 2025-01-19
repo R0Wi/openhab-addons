@@ -12,15 +12,14 @@
  */
 package org.openhab.binding.stiebelheatpump.internal;
 
-import org.openhab.binding.stiebelheatpump.exception.StiebelHeatPumpException;
+import org.openhab.binding.stiebelheatpump.protocol.ProtocolConnector;
+import org.openhab.core.io.transport.serial.SerialPortManager;
 
 /**
- * Exception to be raised if Serial Port was not found.
- *
  * @author Robin Windey - initial contribution
  */
-public class SerialPortNotFoundException extends StiebelHeatPumpException {
-    public SerialPortNotFoundException(String serialPort) {
-        super("Serial port '" + serialPort + "' could not be found.");
-    }
+@FunctionalInterface
+public interface CommunicationServiceFactory {
+    CommunicationService create(SerialPortManager serialPortManager, String serialPortName, int baudRate,
+            int waitingTime, ProtocolConnector connector);
 }

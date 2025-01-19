@@ -10,7 +10,7 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  */
-package org.openhab.binding.stiebelheatpump.internal;
+package org.openhab.binding.stiebelheatpump.exception;
 
 /**
  * Exception for Stiebel heat pump errors.

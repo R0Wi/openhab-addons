@@ -187,4 +187,89 @@
 		length="2" scale="1.0" bitPosition="0" min="0" max="0" step="0.0" unit="Wh"></record>
 	<record channelid="electrHCDay" requestByte="0A091E" requestByte2="0A091F" dataType="Sensor" position="6"
 		length="2" scale="1.0" bitPosition="0" min="0" max="0" step="0.0" unit="Wh"></record>
+
+	<record channelid="programDhwMo0Start" requestByte="0A1710" dataType="Settings" position="6" length="1"
+		scale="1.0" bitPosition="0" min="-128" max="95" step="0.0"></record>
+	<record channelid="programDhwMo0End" requestByte="0A1710" dataType="Settings" position="7" length="1"
+		scale="1.0" bitPosition="0" min="-128" max="95" step="0.0"></record>
+	<record channelid="programDhwMo1Start" requestByte="0A1711" dataType="Settings" position="6" length="1"
+		scale="1.0" bitPosition="0" min="-128" max="95" step="0.0"></record>
+	<record channelid="programDhwMo1End" requestByte="0A1711" dataType="Settings" position="7" length="1"
+		scale="1.0" bitPosition="0" min="-128" max="95" step="0.0"></record>
+	<record channelid="programDhwMo2Start" requestByte="0A1712" dataType="Settings" position="6" length="1"
+		scale="1.0" bitPosition="0" min="-128" max="95" step="0.0"></record>
+	<record channelid="programDhwMo2End" requestByte="0A1712" dataType="Settings" position="7" length="1"
+		scale="1.0" bitPosition="0" min="-128" max="95" step="0.0"></record>
+	<record channelid="programDhwTu0Start" requestByte="0A1720" dataType="Settings" position="6" length="1"
+		scale="1.0" bitPosition="0" min="-128" max="95" step="0.0"></record>
+	<record channelid="programDhwTu0End" requestByte="0A1720" dataType="Settings" position="7" length="1"
+		scale="1.0" bitPosition="0" min="-128" max="95" step="0.0"></record>
+	<record channelid="programDhwTu1Start" requestByte="0A1721" dataType="Settings" position="6" length="1"
+		scale="1.0" bitPosition="0" min="-128" max="95" step="0.0"></record>
+	<record channelid="programDhwTu1End" requestByte="0A1721" dataType="Settings" position="7" length="1"
+		scale="1.0" bitPosition="0" min="-128" max="95" step="0.0"></record>
+	<record channelid="programDhwTu2Start" requestByte="0A1722" dataType="Settings" position="6" length="1"
+		scale="1.0" bitPosition="0" min="-128" max="95" step="0.0"></record>
+	<record channelid="programDhwTu2End" requestByte="0A1722" dataType="Settings" position="7" length="1"
+		scale="1.0" bitPosition="0" min="-128" max="95" step="0.0"></record>
+	<record channelid="programDhwWe0Start" requestByte="0A1730" dataType="Settings" position="6" length="1"
+		scale="1.0" bitPosition="0" min="-128" max="95" step="0.0"></record>
+	<record channelid="programDhwWe0End" requestByte="0A1730" dataType="Settings" position="7" length="1"
+		scale="1.0" bitPosition="0" min="-128" max="95" step="0.0"></record>
+	<record channelid="programDhwWe1Start" requestByte="0A1731" dataType="Settings" position="6" length="1"
+		scale="1.0" bitPosition="0" min="-128" max="95" step="0.0"></record>
+	<record channelid="programDhwWe1End" requestByte="0A1731" dataType="Settings" position="7" length="1"
+		scale="1.0" bitPosition="0" min="-128" max="95" step="0.0"></record>
+	<record channelid="programDhwWe2Start" requestByte="0A1732" dataType="Settings" position="6" length="1"
+		scale="1.0" bitPosition="0" min="-128" max="95" step="0.0"></record>
+	<record channelid="programDhwWe2End" requestByte="0A1732" dataType="Settings" position="7" length="1"
+		scale="1.0" bitPosition="0" min="-128" max="95" step="0.0"></record>
+	<record channelid="programDhwTh0Start" requestByte="0A1740" dataType="Settings" position="6" length="1"
+		scale="1.0" bitPosition="0" min="-128" max="95" step="0.0"></record>
+	<record channelid="programDhwTh0End" requestByte="0A1740" dataType="Settings" position="7" length="1"
+		scale="1.0" bitPosition="0" min="-128" max="95" step="0.0"></record>
+	<record channelid="programDhwTh1Start" requestByte="0A1741" dataType="Settings" position="6" length="1"
+		scale="1.0" bitPosition="0" min="-128" max="95" step="0.0"></record>
+	<record channelid="programDhwTh1End" requestByte="0A1741" dataType="Settings" position="7" length="1"
+		scale="1.0" bitPosition="0" min="-128" max="95" step="0.0"></record>
+	<record channelid="programDhwTh2Start" requestByte="0A1742" dataType="Settings" position="6" length="1"
+		scale="1.0" bitPosition="0" min="-128" max="95" step="0.0"></record>
+	<record channelid="programDhwTh2End" requestByte="0A1742" dataType="Settings" position="7" length="1"
+		scale="1.0" bitPosition="0" min="-128" max="95" step="0.0"></record>
+	<record channelid="programDhwFr0Start" requestByte="0A1750" dataType="Settings" position="6" length="1"
+		scale="1.0" bitPosition="0" min="-128" max="95" step="0.0"></record>
+	<record channelid="programDhwFr0End" requestByte="0A1750" dataType="Settings" position="7" length="1"
+		scale="1.0" bitPosition="0" min="-128" max="95" step="0.0"></record>
+	<record channelid="programDhwFr1Start" requestByte="0A1751" dataType="Settings" position="6" length="1"
+		scale="1.0" bitPosition="0" min="-128" max="95" step="0.0"></record>
+	<record channelid="programDhwFr1End" requestByte="0A1751" dataType="Settings" position="7" length="1"
+		scale="1.0" bitPosition="0" min="-128" max="95" step="0.0"></record>
+	<record channelid="programDhwFr2Start" requestByte="0A1752" dataType="Settings" position="6" length="1"
+		scale="1.0" bitPosition="0" min="-128" max="95" step="0.0"></record>
+	<record channelid="programDhwFr2End" requestByte="0A1752" dataType="Settings" position="7" length="1"
+		scale="1.0" bitPosition="0" min="-128" max="95" step="0.0"></record>
+	<record channelid="programDhwSa0Start" requestByte="0A1760" dataType="Settings" position="6" length="1"
+		scale="1.0" bitPosition="0" min="-128" max="95" step="0.0"></record>
+	<record channelid="programDhwSa0End" requestByte="0A1760" dataType="Settings" position="7" length="1"
+		scale="1.0" bitPosition="0" min="-128" max="95" step="0.0"></record>
+	<record channelid="programDhwSa1Start" requestByte="0A1761" dataType="Settings" position="6" length="1"
+		scale="1.0" bitPosition="0" min="-128" max="95" step="0.0"></record>
+	<record channelid="programDhwSa1End" requestByte="0A1761" dataType="Settings" position="7" length="1"
+		scale="1.0" bitPosition="0" min="-128" max="95" step="0.0"></record>
+	<record channelid="programDhwSa2Start" requestByte="0A1762" dataType="Settings" position="6" length="1"
+		scale="1.0" bitPosition="0" min="-128" max="95" step="0.0"></record>
+	<record channelid="programDhwSa2End" requestByte="0A1762" dataType="Settings" position="7" length="1"
+		scale="1.0" bitPosition="0" min="-128" max="95" step="0.0"></record>
+	<record channelid="programDhwSu0Start" requestByte="0A1770" dataType="Settings" position="6" length="1"
+		scale="1.0" bitPosition="0" min="-128" max="95" step="0.0"></record>
+	<record channelid="programDhwSu0End" requestByte="0A1770" dataType="Settings" position="7" length="1"
+		scale="1.0" bitPosition="0" min="-128" max="95" step="0.0"></record>
+	<record channelid="programDhwSu1Start" requestByte="0A1771" dataType="Settings" position="6" length="1"
+		scale="1.0" bitPosition="0" min="-128" max="95" step="0.0"></record>
+	<record channelid="programDhwSu1End" requestByte="0A1771" dataType="Settings" position="7" length="1"
+		scale="1.0" bitPosition="0" min="-128" max="95" step="0.0"></record>
+	<record channelid="programDhwSu2Start" requestByte="0A1772" dataType="Settings" position="6" length="1"
+		scale="1.0" bitPosition="0" min="-128" max="95" step="0.0"></record>
+	<record channelid="programDhwSu2End" requestByte="0A1772" dataType="Settings" position="7" length="1"
+		scale="1.0" bitPosition="0" min="-128" max="95" step="0.0"></record>
 </records>
