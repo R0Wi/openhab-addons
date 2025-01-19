@@ -19,30 +19,32 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * ByteStreamPipe class that runs the read thread to read bytes from the heat
- * pump connector
+ * ByteStreamReceiver class that runs the read thread to read bytes from the heat
+ * pump connector. Handles only return values from the heat pump (RX), not the TX.
  *
  * @author Peter Kreutzer
  */
-public class ByteStreamPipe implements Runnable {
+public class ByteStreamReceiver implements Runnable {
 
-    private static final Logger logger = LoggerFactory.getLogger(ByteStreamPipe.class);
+    private static final Logger logger = LoggerFactory.getLogger(ByteStreamReceiver.class);
 
-    private InputStream in = null;
-    private CircularByteBuffer buffer;
+    private final InputStream in;
+    private final CircularByteBuffer buffer;
     private Thread taskThread;
 
-    public ByteStreamPipe(InputStream in, CircularByteBuffer buffer) {
+    public ByteStreamReceiver(InputStream in, CircularByteBuffer buffer) {
         this.in = in;
         this.buffer = buffer;
     }
 
     public void startTask() {
+        logger.debug("Starting serial thread");
         taskThread = new Thread(this);
         taskThread.start();
     }
 
     public void stopTask() {
+        logger.debug("Stopping serial thread");
         taskThread.interrupt();
         try {
             in.close();

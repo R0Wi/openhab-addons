@@ -13,11 +13,11 @@
 package org.openhab.binding.stiebelheatpump.protocol;
 
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.openhab.binding.stiebelheatpump.internal.StiebelHeatPumpException;
+import org.openhab.binding.stiebelheatpump.exception.InvalidDataException;
+import org.openhab.binding.stiebelheatpump.exception.StiebelHeatPumpException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -112,7 +112,7 @@ public class DataParser {
                 logger.debug("Parsed value {} -> {} with pos: {} , len: {}", channel, value,
                         recordDefinition.getPosition(), recordDefinition.getLength());
                 map.put(channel, value);
-            } catch (StiebelHeatPumpException e) {
+            } catch (InvalidDataException e) {
             }
         }
         return map;
@@ -131,12 +131,12 @@ public class DataParser {
      *         double for decimal values
      * @throws StiebelHeatPumpException
      */
-    public Object parseRecord(byte[] response, RecordDefinition recordDefinition) throws StiebelHeatPumpException {
+    public Object parseRecord(byte[] response, RecordDefinition recordDefinition) throws InvalidDataException {
         String responseStr = bytesToHex(response, true);
         try {
             if (response.length < 2) {
                 logger.error("response does not have a valid length of bytes: {}", responseStr);
-                throw new StiebelHeatPumpException();
+                throw new InvalidDataException("response does not have a valid length of bytes");
             }
             short number = 0;
             ByteBuffer buffer = ByteBuffer.wrap(response);
@@ -180,7 +180,7 @@ public class DataParser {
         } catch (Exception e) {
             logger.error("response {} could not be parsed for record definition {} ", responseStr,
                     recordDefinition.getChannelid());
-            throw new StiebelHeatPumpException();
+            throw new InvalidDataException("response could not be parsed for record definition");
         }
     }
 
@@ -188,18 +188,18 @@ public class DataParser {
      * composes the new value of a record definition into a updated set command
      * that can be send back to heat pump
      *
+     * @param newValue
+     *            of heat pump that should be updated
      * @param response
-     *            of heat pump that should be updated with new value
+     *            of heat pump. Needed as base to update to compose the update request
      * @param RecordDefinition
      *            that shall be used for compose the new value into the heat
      *            pump set command
-     * @param string
-     *            value to be compose
      * @return byte[] ready to send to heat pump
      * @throws StiebelHeatPumpException
      */
-    public byte[] composeRecord(Object currentValue, Object newValue, byte[] response,
-            RecordDefinition recordDefinition) throws StiebelHeatPumpException {
+    public byte[] composeRecord(Object newValue, byte[] response, RecordDefinition recordDefinition)
+            throws InvalidDataException {
 
         // change response byte to setting command
         response[1] = SET;
@@ -226,7 +226,7 @@ public class DataParser {
                     logger.warn("The record {} can not be set to value {} as allowed range is {}<-->{}!",
                             recordDefinition.getChannelid(), newValue, recordDefinition.getMax(),
                             recordDefinition.getMin());
-                    throw new StiebelHeatPumpException("invalid value!");
+                    throw new InvalidDataException("invalid value!");
                 }
                 newValueShort = (short) (newValueDouble / recordDefinition.getScale());
             }
@@ -237,7 +237,7 @@ public class DataParser {
                     logger.warn("The record {} can not be set to value {} as allowed range is {}<-->{}!",
                             recordDefinition.getChannelid(), newValue, recordDefinition.getMax(),
                             recordDefinition.getMin());
-                    throw new StiebelHeatPumpException("invalid value!");
+                    throw new InvalidDataException("invalid value!");
                 }
             }
 
@@ -363,10 +363,10 @@ public class DataParser {
      *            method
      * @return calculated checksum as short
      */
-    public byte calculateChecksum(byte[] data) throws StiebelHeatPumpException {
+    public byte calculateChecksum(byte[] data) throws InvalidDataException {
 
         if (data.length < 5) {
-            throw new StiebelHeatPumpException("no valid byte[] for calulation of checksum!");
+            throw new InvalidDataException("no valid byte[] for calulation of checksum!");
         }
 
         int checkSum = 0, i = 0;
@@ -400,15 +400,6 @@ public class DataParser {
      */
     public byte[] intToByte(int checkSum) {
         return ByteBuffer.allocate(4).putInt(checkSum).array();
-    }
-
-    /**
-     * converts byte to short
-     *
-     * @return short
-     */
-    private short byteToShort(byte[] bytes) throws StiebelHeatPumpException {
-        return ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).getShort();
     }
 
     /**

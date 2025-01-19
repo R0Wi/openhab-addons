@@ -18,8 +18,8 @@ import java.io.InputStream;
 import java.util.stream.Stream;
 
 import org.eclipse.jdt.annotation.NonNull;
+import org.openhab.binding.stiebelheatpump.exception.StiebelHeatPumpException;
 import org.openhab.binding.stiebelheatpump.internal.SerialPortNotFoundException;
-import org.openhab.binding.stiebelheatpump.internal.StiebelHeatPumpException;
 import org.openhab.core.io.transport.serial.SerialPort;
 import org.openhab.core.io.transport.serial.SerialPortIdentifier;
 import org.openhab.core.io.transport.serial.SerialPortManager;
@@ -32,41 +32,42 @@ import org.slf4j.LoggerFactory;
  *
  * @author Evert van Es (originaly copied from)
  * @author Peter Kreutzer
+ * @author Robin Windey - refactored
  */
 
 public class SerialConnector implements ProtocolConnector {
 
     private static final Logger logger = LoggerFactory.getLogger(SerialConnector.class);
 
-    InputStream in = null;
-    DataOutputStream out = null;
-    SerialPort serialPort = null;
-    ByteStreamPipe byteStreamPipe = null;
-
+    private InputStream in = null;
+    private DataOutputStream out = null;
+    private SerialPort serialPort = null;
+    private ByteStreamReceiver byteStreamReceiver = null;
     private CircularByteBuffer buffer;
-
-    public SerialConnector() {
-    }
 
     @Override
     public void connect(SerialPortManager portManager, String device, int baudrate) throws StiebelHeatPumpException {
+        logger.debug("Connecting to serial port {}", device);
         try {
             SerialPortIdentifier portIdentifier = portManager.getIdentifier(device);
             if (portIdentifier == null) {
                 throw new SerialPortNotFoundException(device);
             }
-            SerialPort commPort = portIdentifier.open(this.getClass().getName(), 2000);
-            serialPort = commPort;
+
+            this.serialPort = portIdentifier.open(this.getClass().getName(), 2000);
+            if (this.serialPort == null) {
+                throw new StiebelHeatPumpException(String.format("Could not open serial port %s", device));
+            }
             setSerialPortParameters(baudrate);
 
-            in = serialPort.getInputStream();
-            out = new DataOutputStream(serialPort.getOutputStream());
+            this.in = serialPort.getInputStream();
+            this.out = new DataOutputStream(serialPort.getOutputStream());
 
-            out.flush();
+            this.out.flush();
 
-            buffer = new CircularByteBuffer(Byte.MAX_VALUE * Byte.MAX_VALUE + 2 * Byte.MAX_VALUE);
-            byteStreamPipe = new ByteStreamPipe(in, buffer);
-            byteStreamPipe.startTask();
+            this.buffer = new CircularByteBuffer(Byte.MAX_VALUE * Byte.MAX_VALUE + 2 * Byte.MAX_VALUE);
+            this.byteStreamReceiver = new ByteStreamReceiver(in, buffer);
+            this.byteStreamReceiver.startTask();
 
         } catch (IOException e) {
             @NonNull
@@ -81,17 +82,30 @@ public class SerialConnector implements ProtocolConnector {
 
     @Override
     public void disconnect() {
-        logger.debug("Interrupt serial connection");
-        if (byteStreamPipe != null) {
-            byteStreamPipe.stopTask();
+        logger.debug("Disconnecting serial connection");
+
+        if (byteStreamReceiver != null) {
+            logger.debug("Interrupt serial connection {}", byteStreamReceiver.getClass().getName());
+            byteStreamReceiver.stopTask();
         }
 
-        logger.debug("Close serial stream");
         if (buffer != null) {
+            logger.debug("Close buffer {}", buffer.getClass().getName());
             buffer.stop();
         }
 
+        if (out != null) {
+            try {
+                logger.debug("Close output stream {}", out.getClass().getName());
+                out.flush();
+                out.close();
+            } catch (IOException e) {
+                logger.error("Could not close output stream", e);
+            }
+        }
+
         if (serialPort != null) {
+            logger.debug("Close serial port {}", serialPort.getClass().getName());
             serialPort.close();
         }
 
@@ -104,46 +118,28 @@ public class SerialConnector implements ProtocolConnector {
     }
 
     @Override
-    public short getShort() throws StiebelHeatPumpException {
-        return buffer.getShort();
-    }
-
-    @Override
-    public void get(byte[] data) throws StiebelHeatPumpException {
-        buffer.get(data);
-    }
-
-    @Override
-    public void mark() {
-        buffer.mark();
-    }
-
-    @Override
-    public void reset() {
-        buffer.reset();
-    }
-
-    @Override
     public void write(byte[] data) throws StiebelHeatPumpException {
         try {
             String dataStr = DataParser.bytesToHex(data, true);
-            logger.debug("Send request message : {}", dataStr);
+            logger.trace("Send request message : {} (Thread {} {})", dataStr, Thread.currentThread().getId(),
+                    Thread.currentThread().getName());
             out.write(data);
             out.flush();
         } catch (IOException e) {
-            throw new StiebelHeatPumpException("Could not write " + e.getMessage());
+            throw new StiebelHeatPumpException("Could not write " + e.getMessage(), e);
         }
     }
 
     @Override
     public void write(byte data) throws StiebelHeatPumpException {
         try {
-            String byteStr = String.format("Send %02X", data);
-            logger.trace("{}", byteStr);
+            String byteStr = String.format("Send single byte request message %02X", data);
+            logger.trace("{} (Thread {} {})", byteStr, Thread.currentThread().getId(),
+                    Thread.currentThread().getName());
             out.write(data);
             out.flush();
         } catch (IOException e) {
-            throw new StiebelHeatPumpException("Could not write " + e.getMessage());
+            throw new StiebelHeatPumpException("Could not write " + e.getMessage(), e);
         }
     }
 
@@ -154,7 +150,6 @@ public class SerialConnector implements ProtocolConnector {
      *            used to initialize the serial connection
      */
     protected void setSerialPortParameters(int baudrate) throws IOException {
-
         try {
             // Set serial port to xxxbps-8N1
             serialPort.setSerialPortParams(baudrate, SerialPort.DATABITS_8, SerialPort.STOPBITS_1,

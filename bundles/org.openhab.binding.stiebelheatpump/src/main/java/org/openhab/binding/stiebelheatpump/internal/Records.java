@@ -28,7 +28,7 @@ import com.thoughtworks.xstream.annotations.XStreamImplicit;
 /**
  * Records class for Stiebel heat pump.
  *
- * @author Peter Kreutzer
+ * @author Peter Kreutzer - initial contribution
  */
 
 @XStreamAlias("records")

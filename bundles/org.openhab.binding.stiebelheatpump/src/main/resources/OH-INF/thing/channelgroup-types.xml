@@ -761,6 +761,186 @@
 			</channel>
 		</channels>
 	</channel-group-type>
+	<channel-group-type id="channelGroupTypeDomesticHotWaterSwitchingPairProgram">
+		<label>Settings Domestic Hot Water Program (Switching Pairs MO-SO)</label>
+		<description>Reads Domestic Hot Water Program settings of the heat pump. Uses switching pairs (newer THZ models)</description>
+		<channels>
+			<channel id="programDhwMo0Start" typeId="timeSettingQuater">
+				<label>MO DHW Start (slot 1)</label>
+				<description>Monday DHW slot 1 start time</description>
+			</channel>
+			<channel id="programDhwMo0End" typeId="timeSettingQuater">
+				<label>MO DHW End (slot 1)</label>
+				<description>Monday DHW slot 1 end time</description>
+			</channel>
+			<channel id="programDhwMo1Start" typeId="timeSettingQuater">
+				<label>MO DHW Start (slot 2)</label>
+				<description>Monday DHW slot 2 start time</description>
+			</channel>
+			<channel id="programDhwMo1End" typeId="timeSettingQuater">
+				<label>MO DHW End (slot 2)</label>
+				<description>Monday DHW slot 2 end time</description>
+			</channel>
+			<channel id="programDhwMo2Start" typeId="timeSettingQuater">
+				<label>MO DHW Start (slot 3)</label>
+				<description>Monday DHW slot 3 start time</description>
+			</channel>
+			<channel id="programDhwMo2End" typeId="timeSettingQuater">
+				<label>MO DHW End (slot 3)</label>
+				<description>Monday DHW slot 3 end time</description>
+			</channel>
+
+			<channel id="programDhwTu0Start" typeId="timeSettingQuater">
+				<label>TU DHW Start (slot 1)</label>
+				<description>Tuesday DHW slot 1 start time</description>
+			</channel>
+			<channel id="programDhwTu0End" typeId="timeSettingQuater">
+				<label>TU DHW End (slot 1)</label>
+				<description>Tuesday DHW slot 1 end time</description>
+			</channel>
+			<channel id="programDhwTu1Start" typeId="timeSettingQuater">
+				<label>TU DHW Start (slot 2)</label>
+				<description>Tuesday DHW slot 2 start time</description>
+			</channel>
+			<channel id="programDhwTu1End" typeId="timeSettingQuater">
+				<label>TU DHW End (slot 2)</label>
+				<description>Tuesday DHW slot 2 end time</description>
+			</channel>
+			<channel id="programDhwTu2Start" typeId="timeSettingQuater">
+				<label>TU DHW Start (slot 3)</label>
+				<description>Tuesday DHW slot 3 start time</description>
+			</channel>
+			<channel id="programDhwTu2End" typeId="timeSettingQuater">
+				<label>TU DHW End (slot 3)</label>
+				<description>Tuesday DHW slot 3 end time</description>
+			</channel>
+
+			<channel id="programDhwWe0Start" typeId="timeSettingQuater">
+				<label>WE DHW Start (slot 1)</label>
+				<description>Wednesday DHW slot 1 start time</description>
+			</channel>
+			<channel id="programDhwWe0End" typeId="timeSettingQuater">
+				<label>WE DHW End (slot 1)</label>
+				<description>Wednesday DHW slot 1 end time</description>
+			</channel>
+			<channel id="programDhwWe1Start" typeId="timeSettingQuater">
+				<label>WE DHW Start (slot 2)</label>
+				<description>Wednesday DHW slot 2 start time</description>
+			</channel>
+			<channel id="programDhwWe1End" typeId="timeSettingQuater">
+				<label>WE DHW End (slot 2)</label>
+				<description>Wednesday DHW slot 2 end time</description>
+			</channel>
+			<channel id="programDhwWe2Start" typeId="timeSettingQuater">
+				<label>WE DHW Start (slot 3)</label>
+				<description>Wednesday DHW slot 3 start time</description>
+			</channel>
+			<channel id="programDhwWe2End" typeId="timeSettingQuater">
+				<label>WE DHW End (slot 3)</label>
+				<description>Wednesday DHW slot 3 end time</description>
+			</channel>
+
+			<channel id="programDhwTh0Start" typeId="timeSettingQuater">
+				<label>TH DHW Start (slot 1)</label>
+				<description>Thursday DHW slot 1 start time</description>
+			</channel>
+			<channel id="programDhwTh0End" typeId="timeSettingQuater">
+				<label>TH DHW End (slot 1)</label>
+				<description>Thursday DHW slot 1 end time</description>
+			</channel>
+			<channel id="programDhwTh1Start" typeId="timeSettingQuater">
+				<label>TH DHW Start (slot 2)</label>
+				<description>Thursday DHW slot 2 start time</description>
+			</channel>
+			<channel id="programDhwTh1End" typeId="timeSettingQuater">
+				<label>TH DHW End (slot 2)</label>
+				<description>Thursday DHW slot 2 end time</description>
+			</channel>
+			<channel id="programDhwTh2Start" typeId="timeSettingQuater">
+				<label>TH DHW Start (slot 3)</label>
+				<description>Thursday DHW slot 3 start time</description>
+			</channel>
+			<channel id="programDhwTh2End" typeId="timeSettingQuater">
+				<label>TH DHW End (slot 3)</label>
+				<description>Thursday DHW slot 3 end time</description>
+			</channel>
+
+			<channel id="programDhwFr0Start" typeId="timeSettingQuater">
+				<label>FR DHW Start (slot 1)</label>
+				<description>Friday DHW slot 1 start time</description>
+			</channel>
+			<channel id="programDhwFr0End" typeId="timeSettingQuater">
+				<label>FR DHW End (slot 1)</label>
+				<description>Friday DHW slot 1 end time</description>
+			</channel>
+			<channel id="programDhwFr1Start" typeId="timeSettingQuater">
+				<label>FR DHW Start (slot 2)</label>
+				<description>Friday DHW slot 2 start time</description>
+			</channel>
+			<channel id="programDhwFr1End" typeId="timeSettingQuater">
+				<label>FR DHW End (slot 2)</label>
+				<description>Friday DHW slot 2 end time</description>
+			</channel>
+			<channel id="programDhwFr2Start" typeId="timeSettingQuater">
+				<label>FR DHW Start (slot 3)</label>
+				<description>Friday DHW slot 3 start time</description>
+			</channel>
+			<channel id="programDhwFr2End" typeId="timeSettingQuater">
+				<label>FR DHW End (slot 3)</label>
+				<description>Friday DHW slot 3 end time</description>
+			</channel>
+
+			<channel id="programDhwSa0Start" typeId="timeSettingQuater">
+				<label>SA DHW Start (slot 1)</label>
+				<description>Saturday DHW slot 1 start time</description>
+			</channel>
+			<channel id="programDhwSa0End" typeId="timeSettingQuater">
+				<label>SA DHW End (slot 1)</label>
+				<description>Saturday DHW slot 1 end time</description>
+			</channel>
+			<channel id="programDhwSa1Start" typeId="timeSettingQuater">
+				<label>SA DHW Start (slot 2)</label>
+				<description>Saturday DHW slot 2 start time</description>
+			</channel>
+			<channel id="programDhwSa1End" typeId="timeSettingQuater">
+				<label>SA DHW End (slot 2)</label>
+				<description>Saturday DHW slot 2 end time</description>
+			</channel>
+			<channel id="programDhwSa2Start" typeId="timeSettingQuater">
+				<label>SA DHW Start (slot 3)</label>
+				<description>Saturday DHW slot 3 start time</description>
+			</channel>
+			<channel id="programDhwSa2End" typeId="timeSettingQuater">
+				<label>SA DHW End (slot 3)</label>
+				<description>Saturday DHW slot 3 end time</description>
+			</channel>
+
+			<channel id="programDhwSu0Start" typeId="timeSettingQuater">
+				<label>SU DHW Start (slot 1)</label>
+				<description>Sunday DHW slot 1 start time</description>
+			</channel>
+			<channel id="programDhwSu0End" typeId="timeSettingQuater">
+				<label>SU DHW End (slot 1)</label>
+				<description>Sunday DHW slot 1 end time</description>
+			</channel>
+			<channel id="programDhwSu1Start" typeId="timeSettingQuater">
+				<label>SU DHW Start (slot 2)</label>
+				<description>Sunday DHW slot 2 start time</description>
+			</channel>
+			<channel id="programDhwSu1End" typeId="timeSettingQuater">
+				<label>SU DHW End (slot 2)</label>
+				<description>Sunday DHW slot 2 end time</description>
+			</channel>
+			<channel id="programDhwSu2Start" typeId="timeSettingQuater">
+				<label>SU DHW Start (slot 3)</label>
+				<description>Sunday DHW slot 3 start time</description>
+			</channel>
+			<channel id="programDhwSu2End" typeId="timeSettingQuater">
+				<label>SU DHW End (slot 3)</label>
+				<description>Sunday DHW slot 3 end time</description>
+			</channel>
+		</channels>
+	</channel-group-type>
 	<channel-group-type id="channelGroupTypeAbsenceProgram">
 		<label>Settings Absence Program</label>
 		<description>Reads Absence Program settings of the heat pump.</description>

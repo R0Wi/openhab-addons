@@ -18,6 +18,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.format.ResolverStyle;
@@ -26,15 +27,18 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.regex.Pattern;
 
 import javax.measure.quantity.Dimensionless;
 import javax.measure.quantity.Energy;
 import javax.measure.quantity.Temperature;
 
+import org.eclipse.jdt.annotation.Nullable;
+import org.openhab.binding.stiebelheatpump.exception.StiebelHeatPumpException;
 import org.openhab.binding.stiebelheatpump.protocol.DataParser;
 import org.openhab.binding.stiebelheatpump.protocol.RecordDefinition;
 import org.openhab.binding.stiebelheatpump.protocol.RecordDefinition.Type;
@@ -43,6 +47,7 @@ import org.openhab.binding.stiebelheatpump.protocol.Requests;
 import org.openhab.binding.stiebelheatpump.protocol.SerialConnector;
 import org.openhab.core.io.transport.serial.SerialPortIdentifier;
 import org.openhab.core.io.transport.serial.SerialPortManager;
+import org.openhab.core.library.types.DateTimeType;
 import org.openhab.core.library.types.DecimalType;
 import org.openhab.core.library.types.OnOffType;
 import org.openhab.core.library.types.OpenClosedType;
@@ -56,9 +61,11 @@ import org.openhab.core.thing.Thing;
 import org.openhab.core.thing.ThingStatus;
 import org.openhab.core.thing.ThingStatusDetail;
 import org.openhab.core.thing.binding.BaseThingHandler;
+import org.openhab.core.thing.link.ItemChannelLinkRegistry;
 import org.openhab.core.thing.type.ChannelTypeUID;
 import org.openhab.core.types.Command;
 import org.openhab.core.types.RefreshType;
+import org.openhab.core.types.State;
 import org.openhab.core.types.UnDefType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,6 +75,7 @@ import org.slf4j.LoggerFactory;
  * sent to one of the channels.
  *
  * @author Peter Kreutzer - Initial contribution
+ * @author Robin Windey - Improvements and Openhab 4 compatibility
  */
 public class StiebelHeatPumpHandler extends BaseThingHandler {
 
@@ -76,13 +84,18 @@ public class StiebelHeatPumpHandler extends BaseThingHandler {
 
     private Logger logger = LoggerFactory.getLogger(StiebelHeatPumpHandler.class);
     private final SerialPortManager serialPortManager;
+    private final ConfigFileLoader configFileLoader;
+    private final CommunicationServiceFactory communicationServiceFactory;
+    private final ScheduledExecutorService scheduledExecutorService;
+    private final ItemChannelLinkRegistry itemChannelLinkRegistry;
     private StiebelHeatPumpConfiguration config;
-    CommunicationService communicationService;
-    // volatile AtomicBoolean communicationInUse = new AtomicBoolean(false);
+    private CommunicationService communicationService;
     private ReentrantLock communicationInUse = new ReentrantLock();
+    private AtomicInteger commandsPendingCounter = new AtomicInteger(0);
+    private Instant lastCommandExecuted = Instant.now();
 
     /** heat pump request definition */
-    private Requests heatPumpConfiguration = new Requests();
+    private final Requests heatPumpConfiguration;
     private Request versionRequest;
     private Request timeRequest;
 
@@ -97,9 +110,29 @@ public class StiebelHeatPumpHandler extends BaseThingHandler {
     ScheduledFuture<?> retryOpenPortJob;
     private int retryPortCounter = 0;
 
-    public StiebelHeatPumpHandler(Thing thing, final SerialPortManager serialPortManager) {
+    public StiebelHeatPumpHandler(Thing thing, final SerialPortManager serialPortManager,
+            final ConfigFileLoader configFileLoader, final CommunicationServiceFactory communicationServiceFactory,
+            final ItemChannelLinkRegistry itemChannelLinkRegistry,
+            final @Nullable ScheduledExecutorService scheduledExecutorService) {
         super(thing);
         this.serialPortManager = serialPortManager;
+        this.configFileLoader = configFileLoader;
+        this.communicationServiceFactory = communicationServiceFactory;
+        this.itemChannelLinkRegistry = itemChannelLinkRegistry;
+        // used for unit testing:
+        this.scheduledExecutorService = (scheduledExecutorService != null) ? scheduledExecutorService : scheduler;
+
+        // get the records from the thing-type configuration file
+        this.heatPumpConfiguration = new Requests();
+        String configFile = getThing().getThingTypeUID().getId();
+        ConfigLocator configLocator = new ConfigLocator(configFile + ".xml", this.configFileLoader);
+        heatPumpConfiguration.setRequests(configLocator.getRequests());
+    }
+
+    public StiebelHeatPumpHandler(Thing thing, final SerialPortManager serialPortManager,
+            final ConfigFileLoader configFileLoader, final CommunicationServiceFactory communicationServiceFactory,
+            final ItemChannelLinkRegistry itemChannelLinkRegistry) {
+        this(thing, serialPortManager, configFileLoader, communicationServiceFactory, itemChannelLinkRegistry, null);
     }
 
     @Override
@@ -108,13 +141,32 @@ public class StiebelHeatPumpHandler extends BaseThingHandler {
             // refresh is handled with scheduled polling of data
             return;
         }
-        logger.debug("Received command {} for channelUID {}", command, channelUID);
+        logger.debug("Received command {} for channelUID {} (Thread {})", command, channelUID,
+                Thread.currentThread().getName());
         String channelId = channelUID.getId();
 
+        if (communicationService == null) {
+            logger.warn("Communication service is not initialized, cannot handle command.");
+            return;
+        }
+
+        commandsPendingCounter.incrementAndGet();
         communicationInUse.lock();
 
+        // Use configured delay also for commands
+        while (Duration.between(lastCommandExecuted, Instant.now())
+                .compareTo(Duration.ofMillis(config.waitingTime)) < 0) {
+            try {
+                logger.trace("Delay command");
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                logger.warn("Thread interrupted while delaying command(s).");
+                return;
+            }
+        }
+
         try {
-            Map<String, Object> data = new HashMap<>();
+            Map<String, Object> data = null;
             switch (channelId) {
                 case CHANNEL_SETTIME:
                     data = communicationService.setTime(timeRequest);
@@ -145,48 +197,39 @@ public class StiebelHeatPumpHandler extends BaseThingHandler {
                     break;
                 default:
                     // do checks if valid definition is available
-                    RecordDefinition updateRecord = heatPumpConfiguration.getRecordDefinitionByChannelId(channelId);
-                    if (updateRecord == null) {
+                    var recordDefinition = heatPumpConfiguration.getRecordDefinitionByChannelId(channelId);
+                    if (recordDefinition == null) {
+                        logger.warn("No record definition found for channelid {}!", channelId);
                         return;
                     }
-                    if (updateRecord.getDataType() != Type.Settings) {
+                    if (recordDefinition.getDataType() != Type.Settings) {
                         logger.warn("The record {} can not be set as it is not a setable value!", channelId);
                         return;
                     }
-                    Object value = null;
-                    if (command instanceof OnOffType) {
-                        // the command come from a switch type , we need to map ON and OFF to 0 and 1 values
-                        value = true;
-                        if (command.equals(OnOffType.OFF)) {
-                            value = false;
-                        }
+
+                    var channelType = getThing().getChannel(channelUID).getChannelTypeUID().toString();
+
+                    if (CHANNELTYPE_TIMESETTING_QUATER.equals(channelType)) {
+                        /*
+                         * Channel type: timesetting quater. Needs special handling
+                         * because we always need to set both Start and End simulatenously.
+                         */
+                        data = handleTimeQuaterCommand(channelUID, command, recordDefinition);
+                    } else {
+                        /*
+                         * "Regular" single value write
+                         */
+                        data = handleSingleValueCommand(channelUID, command, recordDefinition);
                     }
-                    if (command instanceof QuantityType) {
-                        QuantityType<?> newQtty = ((QuantityType<?>) command);
-                        value = newQtty.doubleValue();
-                    }
-                    if (command instanceof DecimalType) {
-                        value = ((DecimalType) command).doubleValue();
-                    }
-                    if (command instanceof StringType) {
-                        DateTimeFormatter strictTimeFormatter = DateTimeFormatter.ofPattern("HH:mm")
-                                .withResolverStyle(ResolverStyle.STRICT);
-                        try {
-                            LocalTime time = LocalTime.parse(command.toString(), strictTimeFormatter);
-                            value = (short) (time.getHour() * 100 + time.getMinute());
-                        } catch (DateTimeParseException e) {
-                            logger.info("Time string is not valid! : {}", e.getMessage());
-                        }
-                    }
-                    data = communicationService.writeData(value, channelId, updateRecord);
                     updateChannels(data);
             }
         } catch (Exception e) {
             logger.debug("Exception occurred during execution: {}", e.getMessage(), e);
             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.OFFLINE.COMMUNICATION_ERROR, e.getMessage());
         } finally {
-            // communicationInUse.set(false);
+            lastCommandExecuted = Instant.now();
             communicationInUse.unlock();
+            commandsPendingCounter.decrementAndGet();
         }
     }
 
@@ -210,12 +253,8 @@ public class StiebelHeatPumpHandler extends BaseThingHandler {
 
     @Override
     public void initialize() {
-        if (heatPumpConfiguration.getRequests().isEmpty()) {
-            // get the records from the thing-type configuration file
-            String configFile = getThing().getThingTypeUID().getId();
-            ConfigLocator configLocator = new ConfigLocator(configFile + ".xml", new ConfigFileLoader());
-            heatPumpConfiguration.setRequests(configLocator.getRequests());
-        }
+        logger.debug("Initializing handler for thing {}", getThing().getUID());
+
         categorizeHeatPumpConfiguration();
         updateRefreshRequests();
 
@@ -240,24 +279,25 @@ public class StiebelHeatPumpHandler extends BaseThingHandler {
                 return;
             }
             logger.debug("Serial port {} was not found, retrying in {}.", config.port, RETRY_PORT_DELAY);
-            retryOpenPortJob = scheduler.schedule(this::initialize, RETRY_PORT_DELAY.getSeconds(), TimeUnit.SECONDS);
+            retryOpenPortJob = scheduledExecutorService.schedule(this::initialize, RETRY_PORT_DELAY.getSeconds(),
+                    TimeUnit.SECONDS);
+            retryPortCounter++;
             return;
         }
 
         retryPortCounter = 0;
         cancelRetryOpenPortJob.run();
 
-        communicationService = new CommunicationService(serialPortManager, config.port, config.baudRate,
+        communicationService = communicationServiceFactory.create(serialPortManager, config.port, config.baudRate,
                 config.waitingTime, new SerialConnector());
 
-        scheduler.schedule(() -> this.getInitialHeatPumpSettings(), 0, TimeUnit.SECONDS);
+        scheduledExecutorService.schedule(() -> this.getInitialHeatPumpSettings(), 0, TimeUnit.SECONDS);
         updateStatus(ThingStatus.UNKNOWN, ThingStatusDetail.HANDLER_CONFIGURATION_PENDING,
                 "Waiting for messages from device");
     }
 
     @Override
     public void dispose() {
-
         if (timeRefreshJob != null && !timeRefreshJob.isCancelled()) {
             timeRefreshJob.cancel(true);
         }
@@ -274,9 +314,8 @@ public class StiebelHeatPumpHandler extends BaseThingHandler {
         communicateWithHeatPumpJob = null;
 
         if (communicationService != null) {
-            communicationService.disconnect();
+            communicationService.close();
         }
-        // communicationInUse.set(false);
         if (communicationInUse.isLocked()) {
             communicationInUse.unlock();
         }
@@ -331,10 +370,10 @@ public class StiebelHeatPumpHandler extends BaseThingHandler {
                 return;
             }
         } catch (Exception e) {
-            logger.warn("{}", e.getMessage(), e);
+            logger.warn("Communication problem with heatpump", e);
             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR,
                     "Communication problem with heatpump");
-            communicationService.finalizer();
+            communicationService.close();
             return;
         }
 
@@ -344,14 +383,14 @@ public class StiebelHeatPumpHandler extends BaseThingHandler {
     }
 
     private void startHeatpumpCommunication() {
-        communicateWithHeatPumpJob = scheduler.scheduleWithFixedDelay(() -> {
+        communicateWithHeatPumpJob = scheduledExecutorService.scheduleWithFixedDelay(() -> {
             Instant start = Instant.now();
             if (scheduledRequests.getRequests().isEmpty()) {
                 logger.debug("nothing to update, refresh list is empty");
                 return;
             }
 
-            Map<String, Object> data = sendRequests(scheduledRequests.getRequests());
+            sendRequestsAndUpdateChannels(scheduledRequests.getRequests());
 
             Instant end = Instant.now();
             logger.debug("Data refresh took {} seconds.", Duration.between(start, end).getSeconds());
@@ -359,23 +398,41 @@ public class StiebelHeatPumpHandler extends BaseThingHandler {
         }, 10, config.refresh, TimeUnit.SECONDS);
     }
 
-    private Map<String, Object> sendRequests(List<Request> requests) {
-        Map<String, Object> data = new HashMap<>();
-        // communicationInUse.set(true);
+    private void sendRequestsAndUpdateChannels(List<Request> requests) {
         communicationInUse.lock();
-        logger.debug("Refresh data of heat pump.");
+        logger.debug("Refresh data of heat pump (Thread {}).", Thread.currentThread().getName());
+        Runnable beforeNextRequestCallback = () -> {
+            if (commandsPendingCounter.get() <= 0) {
+                return;
+            }
+            try {
+                Instant now = Instant.now();
+                logger.debug("Pausing get requests for pending command(s).");
+                communicationInUse.unlock(); // Let waiting command pass
+                while (commandsPendingCounter.get() > 0) {
+                    Thread.sleep(100);
+                }
+                communicationInUse.lock();
+                Thread.sleep(config.waitingTime);
+                logger.debug("Continue get requests after waiting {}ms for pending command(s).",
+                        Duration.between(now, Instant.now()).toMillis());
+
+            } catch (InterruptedException e) {
+                logger.warn("Thread interrupted while waiting for pending command(s).");
+                return;
+            }
+        };
         try {
-            data = communicationService.getRequestData(requests);
-            // do the channel update immediately within the communicationInUse guard to avoid clashing TODO
+            Map<String, Object> data = communicationService.getRequestData(requests, beforeNextRequestCallback);
+            // do the channel update immediately within the communicationInUse guard to avoid clashing
             updateChannels(data);
         } catch (Exception e) {
             logger.error("Exception occurred during execution of sendRequests.", e);
             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.OFFLINE.COMMUNICATION_ERROR, e.getMessage());
         } finally {
-            // communicationInUse.set(false);
             communicationInUse.unlock();
         }
-        return data;
+        logger.debug("Data refresh of heat pump finished.");
     }
 
     /**
@@ -383,7 +440,7 @@ public class StiebelHeatPumpHandler extends BaseThingHandler {
      * once a week
      */
     private void startTimeRefresh() {
-        timeRefreshJob = scheduler.scheduleWithFixedDelay(() -> {
+        timeRefreshJob = scheduledExecutorService.scheduleWithFixedDelay(() -> {
 
             communicationInUse.lock();
             logger.debug("Refresh time of heat pump.");
@@ -420,6 +477,10 @@ public class StiebelHeatPumpHandler extends BaseThingHandler {
             if (channelType.equalsIgnoreCase(CHANNELTYPE_TIMESETTING)
                     | channelType.equalsIgnoreCase(CHANNELTYPE_ERRORTIME)) {
                 updateTimeChannel(entry.getValue().toString(), channelUID);
+                continue;
+            }
+            if (channelType.equalsIgnoreCase(CHANNELTYPE_TIMESETTING_QUATER)) {
+                updateTimeQuaterChannel((Number) entry.getValue(), channelUID);
                 continue;
             }
             if (channelType.equalsIgnoreCase(CHANNELTYPE_ERRORDATE)) {
@@ -508,15 +569,23 @@ public class StiebelHeatPumpHandler extends BaseThingHandler {
     }
 
     private void updateTimeQuaterChannel(Number value, ChannelUID channelUID) {
-        var fullHours = value.intValue() / 4;
-        if (fullHours >= 24) {
-            // A slot which is not set normally has value 130 (32,5h)
-            // but if the value is 24 or higher, we set the channel to NULL
+        if (StiebelHeatPumpBindingConstants.RESET_TIME_QUATER.equals((short) value.intValue())) {
+            // A slot which is not set normally has value -128 (hex 0x80)
             updateState(channelUID, UnDefType.NULL);
             return;
         }
+
+        var fullHours = value.intValue() / 4;
         var minutes = (value.intValue() % 4) * 15;
-        var newTime = new DateTimeType(String.format("%02d:%02d", fullHours, minutes));
+
+        if (fullHours >= 24 || fullHours < 0) {
+            logger.warn("Invalid time quater value: {}. Setting channel {} to NULL", value, channelUID);
+            updateState(channelUID, UnDefType.NULL);
+            return;
+        }
+
+        var dt = new DateTimeType(LocalDateTime.of(1970, 1, 1, fullHours, minutes).atZone(ZoneId.systemDefault()));
+        var newTime = new StringType(dt.toString());
         updateState(channelUID, newTime);
     }
 
@@ -562,9 +631,7 @@ public class StiebelHeatPumpHandler extends BaseThingHandler {
     private void updateRefreshRequests() {
         for (Channel channel : getThing().getChannels()) {
             ChannelUID channelUID = channel.getUID();
-            String[] parts = channelUID.getId()
-                    .split(Pattern.quote(StiebelHeatPumpBindingConstants.CHANNELGROUPSEPERATOR));
-            String channelId = parts[parts.length - 1];
+            String channelId = channelUID.getIdWithoutGroup();
             logger.debug("Checking channel {} for refresh.", channelId);
 
             Request request = heatPumpConfiguration.getRequestByChannelId(channelId);
@@ -608,9 +675,124 @@ public class StiebelHeatPumpHandler extends BaseThingHandler {
 
             if (refreshNow) {
                 List<Request> requestList = Collections.singletonList(request);
-                Map<String, Object> data = sendRequests(requestList);
-                updateChannels(data);
+                sendRequestsAndUpdateChannels(requestList);
             }
         }
+    }
+
+    private Map<String, Object> handleTimeQuaterCommand(ChannelUID channelUID, Command command,
+            RecordDefinition recordDefinitionStartOrEnd) throws StiebelHeatPumpException {
+        // We use StringType for time quaters because it's "nullable" (DateTimeType is
+        // not).
+        if (!(command instanceof StringType stringCommand)) {
+            logger.warn("Command ({}) is not a StringType, cannot set time quater channel.", command.getClass());
+            return Map.of();
+        }
+
+        final String channelUidStr = channelUID.toString();
+
+        ChannelUID channelUidOther;
+        Boolean commandedItemIsStart = false;
+        RecordDefinition recordDefinitionStart, recordDefinitionEnd;
+
+        // Search the corresponding channel for the other time quater.
+        if (channelUidStr.matches(".*Start$")) {
+            channelUidOther = new ChannelUID(channelUidStr.replaceAll("(.*)Start$", "$1End"));
+            recordDefinitionStart = recordDefinitionStartOrEnd;
+            recordDefinitionEnd = heatPumpConfiguration.getRecordDefinitionByChannelId(channelUidOther.getId());
+            commandedItemIsStart = true;
+        } else if (channelUidStr.matches(".*End$")) {
+            channelUidOther = new ChannelUID(channelUidStr.replaceAll("(.*)End$", "$1Start"));
+            recordDefinitionEnd = recordDefinitionStartOrEnd;
+            recordDefinitionStart = heatPumpConfiguration.getRecordDefinitionByChannelId(channelUidOther.getId());
+        } else {
+            logger.warn("Implementation error: channel {} is not a valid time quater channel.", channelUID.getId());
+            return Map.of();
+        }
+
+        Short valueStart, valueEnd;
+        var commandedItemTimeString = command.toString();
+
+        if (commandedItemTimeString.isEmpty() || commandedItemTimeString.equals(UnDefType.NULL.toString())) {
+            // If the channel has been commanded to "empty", reset the whole pair.
+            valueStart = valueEnd = StiebelHeatPumpBindingConstants.RESET_TIME_QUATER;
+        } else {
+            var linkedItemOther = itemChannelLinkRegistry.getLinkedItems(channelUidOther).stream().findFirst()
+                    .orElse(null);
+            if (linkedItemOther == null) {
+                logger.warn("No linked item found for channel {}. Both Start and End channels need to be linked",
+                        channelUidOther.getId());
+                return new HashMap<>();
+            }
+
+            var stateOther = linkedItemOther.getState();
+            var otherItemTimeString = stateOther.toString();
+
+            Short valueCommandedItem = null;
+            Short valueOther = null;
+
+            try {
+                valueCommandedItem = calculateTimeQuaterValue(stringCommand);
+                if (otherItemTimeString.isEmpty() || otherItemTimeString.equals(UnDefType.NULL.toString())) {
+                    // If the second channel of the pair is not set, we set
+                    // it to the same value as the first one to create a "valid pair".
+                    valueOther = valueCommandedItem;
+                } else {
+                    valueOther = calculateTimeQuaterValue(stateOther);
+                }
+            } catch (IllegalArgumentException e) {
+                logger.warn("Could not parse time quater value", e);
+                return Map.of();
+            }
+
+            if (commandedItemIsStart) {
+                valueStart = valueCommandedItem;
+                valueEnd = valueOther;
+            } else {
+                valueStart = valueOther;
+                valueEnd = valueCommandedItem;
+            }
+        }
+
+        return communicationService.writeTimeQuaterPair(valueStart, valueEnd, recordDefinitionStart,
+                recordDefinitionEnd);
+    }
+
+    private Map<String, Object> handleSingleValueCommand(ChannelUID channelUID, Command command,
+            RecordDefinition recordDefinition) throws StiebelHeatPumpException {
+        Object value = null;
+        if (command instanceof OnOffType) {
+            // the command come from a switch type , we need to map ON and OFF to 0 and 1
+            // values
+            value = true;
+            if (command.equals(OnOffType.OFF)) {
+                value = false;
+            }
+        }
+        if (command instanceof QuantityType<?> newQtty) {
+            value = newQtty.doubleValue();
+        }
+        if (command instanceof DecimalType dec) {
+            value = dec.doubleValue();
+        }
+        if (command instanceof StringType) {
+            DateTimeFormatter strictTimeFormatter = DateTimeFormatter.ofPattern("HH:mm")
+                    .withResolverStyle(ResolverStyle.STRICT);
+            try {
+                LocalTime time = LocalTime.parse(command.toString(), strictTimeFormatter);
+                value = (short) (time.getHour() * 100 + time.getMinute());
+            } catch (DateTimeParseException e) {
+                logger.info("Time string is not valid! : {}", e.getMessage());
+            }
+        }
+        return communicationService.writeData(value, recordDefinition);
+    }
+
+    private short calculateTimeQuaterValue(State itemState) throws IllegalArgumentException {
+        var dt = new DateTimeType(itemState.toString());
+        var zonedDateTime = dt.getZonedDateTime(ZoneId.systemDefault());
+        var hours = zonedDateTime.getHour();
+        var minutes = zonedDateTime.getMinute();
+        return (short) (hours * 4 + minutes / 15);
     }
 }

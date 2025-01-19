@@ -17,6 +17,7 @@
 			<channel-group id="display" typeId="channelGroupTypeDisplay"/>
 			<channel-group id="hc1" typeId="channelGroupTypeF4HC1"/>
 			<channel-group id="electricalEnergy" typeId="channelGroupTypeEnergy"/>
+			<channel-group id="dhwProgram" typeId="channelGroupTypeDomesticHotWaterSwitchingPairProgram"/>
 		</channel-groups>
 		<properties>
 			<property name="vendor">Stiebel Eltron</property>

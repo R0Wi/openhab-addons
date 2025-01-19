@@ -10,13 +10,15 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  */
-package org.openhab.binding.stiebelheatpump.internal;
-
-import java.net.URL;
+package org.openhab.binding.stiebelheatpump.exception;
 
 /**
- * @author Robin Windey
+ * Exception for Stiebel heat pump errors.
+ *
+ * @author Robin Windey - initial contribution
  */
-public interface IConfigFileLoader {
-    URL getConfig(String file);
+public class InvalidDataException extends RuntimeException {
+    public InvalidDataException(String message) {
+        super(message);
+    }
 }

@@ -12,7 +12,7 @@
  */
 package org.openhab.binding.stiebelheatpump.protocol;
 
-import org.openhab.binding.stiebelheatpump.internal.StiebelHeatPumpException;
+import org.openhab.binding.stiebelheatpump.exception.StiebelHeatPumpException;
 import org.openhab.core.io.transport.serial.SerialPortManager;
 
 /**
@@ -25,14 +25,6 @@ public interface ProtocolConnector {
     public abstract void disconnect();
 
     public abstract byte get() throws StiebelHeatPumpException;
-
-    public abstract short getShort() throws StiebelHeatPumpException;
-
-    public abstract void get(byte abyte0[]) throws StiebelHeatPumpException;
-
-    public abstract void mark();
-
-    public abstract void reset();
 
     public abstract void write(byte abyte0[]) throws StiebelHeatPumpException;
 

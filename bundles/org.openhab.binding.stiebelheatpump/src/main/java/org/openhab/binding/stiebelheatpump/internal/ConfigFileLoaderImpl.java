@@ -12,15 +12,17 @@
  */
 package org.openhab.binding.stiebelheatpump.internal;
 
-import org.openhab.binding.stiebelheatpump.exception.StiebelHeatPumpException;
+import java.net.URL;
+
+import org.osgi.framework.FrameworkUtil;
 
 /**
- * Exception to be raised if Serial Port was not found.
- *
  * @author Robin Windey - initial contribution
  */
-public class SerialPortNotFoundException extends StiebelHeatPumpException {
-    public SerialPortNotFoundException(String serialPort) {
-        super("Serial port '" + serialPort + "' could not be found.");
+public class ConfigFileLoaderImpl implements ConfigFileLoader {
+
+    @Override
+    public URL getConfig(String file) {
+        return FrameworkUtil.getBundle(ConfigFileLoaderImpl.class).getEntry("HeatpumpConfig/" + file);
     }
 }

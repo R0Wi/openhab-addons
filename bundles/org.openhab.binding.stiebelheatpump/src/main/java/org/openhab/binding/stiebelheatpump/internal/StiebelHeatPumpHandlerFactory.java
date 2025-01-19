@@ -23,6 +23,7 @@ import org.openhab.core.thing.ThingTypeUID;
 import org.openhab.core.thing.binding.BaseThingHandlerFactory;
 import org.openhab.core.thing.binding.ThingHandler;
 import org.openhab.core.thing.binding.ThingHandlerFactory;
+import org.openhab.core.thing.link.ItemChannelLinkRegistry;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -49,11 +50,14 @@ public class StiebelHeatPumpHandlerFactory extends BaseThingHandlerFactory {
         }
     };
 
-    private SerialPortManager serialPortManager;
+    private final SerialPortManager serialPortManager;
+    private final ItemChannelLinkRegistry itemChannelLinkRegistry;
 
     @Activate
-    public StiebelHeatPumpHandlerFactory(@Reference final SerialPortManager serialPortManager) {
+    public StiebelHeatPumpHandlerFactory(@Reference final SerialPortManager serialPortManager,
+            @Reference final ItemChannelLinkRegistry itemChannelLinkRegistry) {
         this.serialPortManager = serialPortManager;
+        this.itemChannelLinkRegistry = itemChannelLinkRegistry;
     }
 
     @Override
@@ -65,19 +69,16 @@ public class StiebelHeatPumpHandlerFactory extends BaseThingHandlerFactory {
     protected ThingHandler createHandler(Thing thing) {
         ThingTypeUID thingTypeUID = thing.getThingTypeUID();
 
-        if (supportsThingType(thingTypeUID)) {
-            return new StiebelHeatPumpHandler(thing, serialPortManager);
+        if (!supportsThingType(thingTypeUID)) {
+            return null;
         }
 
-        return null;
-    }
+        final CommunicationServiceFactory communicationServiceFactory = (serialPortManager, serialPortName, baudRate,
+                waitingTime, connector) -> new CommunicationServiceImpl(serialPortManager, serialPortName, baudRate,
+                        waitingTime, connector);
+        final ConfigFileLoader configFileLoader = new ConfigFileLoaderImpl();
 
-    @Reference
-    protected void setSerialPortManager(final SerialPortManager serialPortManager) {
-        this.serialPortManager = serialPortManager;
-    }
-
-    protected void unsetSerialPortManager(final SerialPortManager serialPortManager) {
-        this.serialPortManager = null;
+        return new StiebelHeatPumpHandler(thing, serialPortManager, configFileLoader, communicationServiceFactory,
+                itemChannelLinkRegistry);
     }
 }

@@ -27,7 +27,7 @@ import com.thoughtworks.xstream.security.AnyTypePermission;
  * Config parser class. This class parses the xml configuration file converts it
  * into a list of requests
  *
- * @author Peter Kreutzer
+ * @author Peter Kreutzer - initial contribution
  */
 public class ConfigParser {
 
