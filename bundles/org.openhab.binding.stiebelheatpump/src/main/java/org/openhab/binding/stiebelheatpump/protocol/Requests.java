@@ -69,14 +69,14 @@ public class Requests {
     }
 
     public RecordDefinition getRecordDefinitionByChannelId(String channelId) {
-        for (Request request : requestList) {
-            RecordDefinition record = request.getRecordDefinitionByChannelId(channelId);
-            if (record != null) {
-                return request.getRecordDefinitionByChannelId(channelId);
-            }
+        RecordDefinition recordDefinition = requestList.stream()
+                .map(request -> request.getRecordDefinitionByChannelId(channelId)).filter(record -> record != null)
+                .findFirst().orElse(null);
+        if (recordDefinition == null) {
+            logger.warn("Could not find valid request definition for {},  please verify thing definition.", channelId);
         }
-        logger.warn("Could not find valid request definition for {},  please verify thing definition.", channelId);
-        return null;
+
+        return recordDefinition;
     }
 
     public Request getRequestByByte(byte[] requestByte) {

@@ -269,6 +269,10 @@
 		<label>Time settings Setting in [hh:mm]</label>
 		<state min="0" max="2359" pattern="%s hh:mm"/>
 	</channel-type>
+	<channel-type id="timeSettingQuater" advanced="true">
+		<item-type>String</item-type>
+		<label>Time quater settings in [hh:mm] (interval = 15 mins)</label>
+	</channel-type>
 	<channel-type id="switchSetting" advanced="true">
 		<item-type>Switch</item-type>
 		<label>Enabling switch</label>

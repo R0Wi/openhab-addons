@@ -43,6 +43,7 @@ public class StiebelHeatPumpBindingConstants {
     public static final String CHANNEL_VERSION = "version" + CHANNELGROUPSEPERATOR + CHANNELID_VERSION;
     public static final byte[] REQUEST_VERSION = { (byte) 0xFD };
     public static final byte[] REQUEST_TIME = { (byte) 0xFC };
+    public static final Short RESET_TIME_QUATER = (short) (byte) 0x80;
     public static final String CHANNELID_TIME = "time";
     public static final String CHANNEL_SETTIME = "time" + CHANNELGROUPSEPERATOR + "setTime";
     public static final String CHANNEL_DUMPRESPONSE = "version" + CHANNELGROUPSEPERATOR + "dumpResponse";
@@ -54,6 +55,7 @@ public class StiebelHeatPumpBindingConstants {
     public static final String CHANNEL_FAN_STAGE_NIGHT = "tecalorDebug" + CHANNELGROUPSEPERATOR + "fanStageNight";
 
     public static final String CHANNELTYPE_TIMESETTING = BINDING_ID + ":" + "timeSetting";
+    public static final String CHANNELTYPE_TIMESETTING_QUATER = BINDING_ID + ":" + "timeSettingQuater";
     public static final String CHANNELTYPE_SWITCHSETTING = BINDING_ID + ":" + "switchSetting";
     public static final String CHANNELTYPE_CONTACTSTATUS = BINDING_ID + ":" + "contactStatus";
     public static final String CHANNELTYPE_ERRORTIME = BINDING_ID + ":" + "errorTime";
