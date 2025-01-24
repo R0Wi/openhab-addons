@@ -59,6 +59,7 @@ import org.openhab.core.thing.binding.BaseThingHandler;
 import org.openhab.core.thing.type.ChannelTypeUID;
 import org.openhab.core.types.Command;
 import org.openhab.core.types.RefreshType;
+import org.openhab.core.types.UnDefType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -504,6 +505,19 @@ public class StiebelHeatPumpHandler extends BaseThingHandler {
         String newDate = String.format("%04d", Integer.parseInt(dateString));
         newDate = new StringBuilder(newDate).insert(newDate.length() - 2, "-").toString();
         updateState(channelUID, new StringType(newDate));
+    }
+
+    private void updateTimeQuaterChannel(Number value, ChannelUID channelUID) {
+        var fullHours = value.intValue() / 4;
+        if (fullHours >= 24) {
+            // A slot which is not set normally has value 130 (32,5h)
+            // but if the value is 24 or higher, we set the channel to NULL
+            updateState(channelUID, UnDefType.NULL);
+            return;
+        }
+        var minutes = (value.intValue() % 4) * 15;
+        var newTime = new DateTimeType(String.format("%02d:%02d", fullHours, minutes));
+        updateState(channelUID, newTime);
     }
 
     private void updateRespondChannel(String responds) {
