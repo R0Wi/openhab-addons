@@ -64,9 +64,7 @@ import org.openhab.core.thing.link.ItemChannelLinkRegistry;
 import org.openhab.core.thing.type.ChannelTypeUID;
 import org.openhab.core.types.State;
 import org.openhab.core.types.UnDefType;
-import org.slf4j.LoggerFactory;
 
-import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 
@@ -154,13 +152,7 @@ public class StiebelHeatPumpHandlerTest {
         TestUtils.mockConfig(configFileLoader, configFile);
 
         // Capture logs
-        var context = (LoggerContext) LoggerFactory.getILoggerFactory();
-        logAppender.setContext(context);
-        logAppender.setName("listAppender");
-        logAppender.start();
-        ch.qos.logback.classic.Logger lbLogger = context.getLogger("ROOT");
-        lbLogger.addAppender(logAppender);
-        lbLogger.setLevel(ch.qos.logback.classic.Level.DEBUG);
+        TestUtils.prepareLogAppender(logAppender);
 
         // Timezone for timestamps
         System.setProperty("user.timezone", "Europe/Berlin");
@@ -439,8 +431,10 @@ public class StiebelHeatPumpHandlerTest {
         verify(itemChannelLinkRegistry, times(1)).getLinkedItems(eq(moEndSlot));
     }
 
-    @Test
-    public void testLogsWarningOnInvalidTimeQuaterValueAndDoesNotUpdateItem() throws StiebelHeatPumpException {
+    @ParameterizedTest
+    @MethodSource("provideArgumentsForInvalidDate")
+    public void testLogsWarningOnInvalidTimeQuaterValueAndDoesNotUpdateItem(final StringType dtCommand)
+            throws StiebelHeatPumpException {
         // ARRANGE
         var handler = new StiebelHeatPumpHandler(thing, serialPortManager, configFileLoader,
                 communicationServiceFactory, itemChannelLinkRegistry, scheduler);
@@ -448,7 +442,6 @@ public class StiebelHeatPumpHandlerTest {
         // Initialize to set communicationService
         handler.initialize();
 
-        var dtCommand = new StringType("this is not a time");
         var endSlot = new ChannelUID(
                 "stiebelheatpump:LWZ_THZ504_7_59:StiebelHeatpumpThz504:somegroup#programDhwFr0End");
 
@@ -478,6 +471,9 @@ public class StiebelHeatPumpHandlerTest {
         var nonTimeUpdateStates = capturedStateUpdates.entrySet().stream()
                 .filter(entry -> !entry.getKey().contains("refreshTime")).toList();
         assertEquals(0, nonTimeUpdateStates.size());
+        assertTrue(
+                logAppender.list.stream().anyMatch(log -> log.getMessage().contains("Could not parse time quater value")
+                        && log.getLevel().equals(ch.qos.logback.classic.Level.WARN)));
     }
 
     @Test
@@ -550,6 +546,12 @@ public class StiebelHeatPumpHandlerTest {
 
     private static Stream<Arguments> provideArgumentsForUnsetItemState() {
         return Stream.of(Arguments.of(new StringType()), Arguments.of(new StringType("")),
-                Arguments.of(new StringType(null)), Arguments.of(new StringType(UnDefType.NULL.toString())));
+                Arguments.of(new StringType(null)), Arguments.of(new StringType(UnDefType.NULL.toString())),
+                Arguments.of(new StringType(UnDefType.NULL.toString().toLowerCase())));
+    }
+
+    private static Stream<Arguments> provideArgumentsForInvalidDate() {
+        return Stream.of(Arguments.of(new StringType("this is no date for sure")),
+                Arguments.of(new StringType("nope")));
     }
 }
