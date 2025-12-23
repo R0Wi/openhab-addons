@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2010-2024 Contributors to the openHAB project
+/*
+ * Copyright (c) 2010-2025 Contributors to the openHAB project
  *
  * See the NOTICE file(s) distributed with this work for additional
  * information.
@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory;
  * ByteStreamReceiver class that runs the read thread to read bytes from the heat
  * pump connector. Handles only return values from the heat pump (RX), not the TX.
  *
- * @author Peter Kreutzer
+ * @author Peter Kreutzer - initial contribution
  */
 public class ByteStreamReceiver implements Runnable {
 

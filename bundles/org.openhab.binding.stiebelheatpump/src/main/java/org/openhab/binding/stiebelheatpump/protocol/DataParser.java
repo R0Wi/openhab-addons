@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2010-2024 Contributors to the openHAB project
+/*
+ * Copyright (c) 2010-2025 Contributors to the openHAB project
  *
  * See the NOTICE file(s) distributed with this work for additional
  * information.
@@ -27,7 +27,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Class for parse data packets from Stiebel heat pumps
  *
- * @author Peter Kreutzer
+ * @author Peter Kreutzer - initial contribution
  * @param <T>
  *            original protocol parser was written by Robert Penz in python
  * @since 1.5.0

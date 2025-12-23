@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2010-2024 Contributors to the openHAB project
+/*
+ * Copyright (c) 2010-2025 Contributors to the openHAB project
  *
  * See the NOTICE file(s) distributed with this work for additional
  * information.
@@ -16,7 +16,7 @@ import org.openhab.binding.stiebelheatpump.exception.StiebelHeatPumpException;
 import org.openhab.core.io.transport.serial.SerialPortManager;
 
 /**
- * @author Stefan Triller
+ * @author Stefan Triller - initial contribution
  */
 public interface ProtocolConnector {
 
