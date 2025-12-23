@@ -19,6 +19,8 @@ package org.openhab.binding.stiebelheatpump.exception;
  */
 public class StiebelHeatPumpException extends Exception {
 
+    private static final long serialVersionUID = 1L;
+
     public StiebelHeatPumpException() {
         super();
     }
