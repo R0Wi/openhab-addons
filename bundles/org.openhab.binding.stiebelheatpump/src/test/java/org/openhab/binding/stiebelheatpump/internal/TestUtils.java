@@ -25,9 +25,14 @@ import java.util.stream.Stream;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
+import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
+
+import ch.qos.logback.classic.LoggerContext;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 
 /**
  * Test Utilities.
@@ -50,6 +55,16 @@ public class TestUtils {
             String channelItemType = channelItemTypes.get(channelTypeId);
             return new ChannelInfo(channelId, channelTypeId, channelItemType);
         });
+    }
+
+    public static void prepareLogAppender(ListAppender<ILoggingEvent> logAppender) {
+        var context = (LoggerContext) LoggerFactory.getILoggerFactory();
+        logAppender.setContext(context);
+        logAppender.setName("listAppender");
+        logAppender.start();
+        ch.qos.logback.classic.Logger lbLogger = context.getLogger("ROOT");
+        lbLogger.addAppender(logAppender);
+        lbLogger.setLevel(ch.qos.logback.classic.Level.DEBUG);
     }
 
     private static Stream<Entry<String, String>> getXmlAttributes(String xmlFile, String tagName,

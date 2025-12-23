@@ -13,6 +13,8 @@
 package org.openhab.binding.stiebelheatpump.internal;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
@@ -23,6 +25,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -41,6 +45,9 @@ import org.openhab.binding.stiebelheatpump.protocol.Requests;
 import org.openhab.core.io.transport.serial.SerialPortManager;
 import org.openhab.core.util.HexUtils;
 
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
+
 /**
  * @author Stefan Triller
  * @author Robin Windey
@@ -52,6 +59,17 @@ public class CommunicationServiceTests {
     private @Mock ProtocolConnector connector;
     private @Mock ConfigFileLoader configFileLoader;
     private final List<Byte> writtenBytesBuffer = new ArrayList<Byte>();
+    private final ListAppender<ILoggingEvent> logAppender = new ListAppender<ILoggingEvent>();
+
+    @BeforeEach
+    public void setUp() {
+        TestUtils.prepareLogAppender(logAppender);
+    }
+
+    @AfterEach
+    public void tearDown() {
+        logAppender.stop();
+    }
 
     @Test
     public void testSetCoolingThz504() throws Exception {
@@ -63,13 +81,13 @@ public class CommunicationServiceTests {
         mockWriteBuffer();
 
         final String coolingResponseCurrent = "0100960B028700001003"; // Cooling currently set to "off"
-        final String coolingResponseNew = "0100960B028700011003"; // Cooling currently set to "on"
+        final String coolingSetOk = "01808C0B1003"; // Machine "OK" response
 
         setMockedMachineResponse(
                 // Communication for "get current value"
                 new byte[] { DataParser.ESCAPE }, DataParser.DATAAVAILABLE, HexUtils.hexToBytes(coolingResponseCurrent),
-                // Communictaion after new value has been set
-                new byte[] { DataParser.ESCAPE }, DataParser.DATAAVAILABLE, HexUtils.hexToBytes(coolingResponseNew));
+                // Response after new value has been set
+                new byte[] { DataParser.ESCAPE }, DataParser.DATAAVAILABLE, HexUtils.hexToBytes(coolingSetOk));
 
         try (CommunicationServiceImpl communicationService = new CommunicationServiceImpl(serialPortManager, "", 9600,
                 1, connector)) {
@@ -82,6 +100,7 @@ public class CommunicationServiceTests {
             RecordDefinition coolingSwitchRecordDefinition = requests.getRecordDefinitionByChannelId(channelId);
 
             var newData = communicationService.writeData(true, coolingSwitchRecordDefinition);
+            assertTrue(newData.keySet().size() == 1);
             assertEquals(true, newData.get(channelId));
         }
 
@@ -99,6 +118,50 @@ public class CommunicationServiceTests {
         final String expected = startCommunication + getValueHex + escape + startCommunication + setValueHex + escape;
 
         assertEquals(expected, writtenBytesHex);
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideArgumentsForInvalidSetResponse")
+    public void testSetCoolingThz504Fails(final String setFailedResponse, final String errorMsgSnippet)
+            throws Exception {
+        final String channelId = "p99CoolingHC1Switch";
+        final String config = "LWZ_THZ504_7_59.xml";
+
+        TestUtils.mockConfig(configFileLoader, config);
+
+        mockWriteBuffer();
+
+        final String coolingResponseCurrent = "0100960B028700001003"; // Cooling currently set to "off"
+
+        setMockedMachineResponse(
+                // Communication for "get current value"
+                new byte[] { DataParser.ESCAPE }, DataParser.DATAAVAILABLE, HexUtils.hexToBytes(coolingResponseCurrent),
+                // Response after new value has been set
+                new byte[] { DataParser.ESCAPE }, DataParser.DATAAVAILABLE, HexUtils.hexToBytes(setFailedResponse));
+
+        try (CommunicationServiceImpl communicationService = new CommunicationServiceImpl(serialPortManager, "", 9600,
+                1, connector)) {
+            communicationService.connect();
+
+            ConfigLocator configLocator = new ConfigLocator(config, configFileLoader);
+            List<Request> requestList = configLocator.getRequests();
+            Requests requests = new Requests();
+            requests.setRequests(requestList);
+            RecordDefinition coolingSwitchRecordDefinition = requests.getRecordDefinitionByChannelId(channelId);
+
+            var newData = communicationService.writeData(true, coolingSwitchRecordDefinition);
+
+            assertTrue(newData.keySet().size() == 1);
+            assertEquals(false, newData.get(channelId));
+
+            var logWarning = logAppender.list.stream()
+                    .filter(entry -> entry.getLevel().equals(ch.qos.logback.classic.Level.WARN))
+                    .filter(entry -> entry.getMessage().equals("Verification of header for set operation failed"))
+                    .findFirst().orElse(null);
+            assertNotNull(logWarning);
+            // Verify nested exception message which should have been logged
+            assertTrue(logWarning.getThrowableProxy().getMessage().contains(errorMsgSnippet));
+        }
     }
 
     @Test
@@ -262,6 +325,12 @@ public class CommunicationServiceTests {
                 Arguments.of("FB", fbHexResponse, null, expectedFbResponse),
                 Arguments.of("0A1710", moSlot1Response, null, expectedMoSlot1Response),
                 Arguments.of("0A1711", moSlot2Response, null, expectedMoSlot2Response));
+    }
+
+    private static Stream<Arguments> provideArgumentsForInvalidSetResponse() {
+        return Stream.of(Arguments.of("01018C0B1003", "timing issue"),
+                Arguments.of("01028D0B1003", "CRC error in request"), Arguments.of("01038E0B1003", "unknown command"),
+                Arguments.of("01048F0B1003", "UNKNOWN Register REQUEST"));
     }
 
     private void mockWriteBuffer() throws StiebelHeatPumpException {

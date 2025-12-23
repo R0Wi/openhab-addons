@@ -700,34 +700,37 @@ public class CommunicationServiceImpl implements CommunicationService {
             // decode the new value
             // into a current response , the response is available in the
             // connector object
-            byte[] requestMessage = createRequestMessage(firstRecordDefinition.getRequestByte());
-            final byte[] response = getData(requestMessage);
-            String bytes = DataParser.bytesToHex(response, true);
-            logger.debug("Parse bytes: {}", bytes);
+            final byte[] readRequestMessage = createRequestMessage(firstRecordDefinition.getRequestByte());
+            final byte[] readResponse = getData(readRequestMessage);
 
-            if (Arrays.equals(requestMessage, response)) {
+            logger.debug("Read bytes: {}", DataParser.bytesToHex(readResponse, true));
+
+            if (Arrays.equals(readRequestMessage, readResponse)) {
                 logger.debug("Current value(s) for {} is already {}.", channelIds, newValues);
                 return new HashMap<>();
             }
 
             // create new set request created from the existing read response
-            final byte[] requestUpdateMessage = writeValueDefinitions.stream().reduce(response, (currentResponse,
-                    def) -> parser.composeRecord(def.getNewValue(), currentResponse, def.getRecordDefinition()),
-                    (acc, def) -> acc);
+            final byte[] updateRequestMessage = Arrays.copyOf(readResponse, readResponse.length);
+            writeValueDefinitions.forEach(
+                    def -> parser.composeRecord(def.getNewValue(), updateRequestMessage, def.getRecordDefinition()));
 
             logger.debug("Setting new value(s) [{}] for channel(s) [{}]", newValues, channelIds);
 
             Thread.sleep(waitingTime);
 
-            final byte[] setDataResponse = setData(requestUpdateMessage);
-            byte[] currentMachineState;
+            final byte[] setDataResponse = setData(updateRequestMessage);
+            logger.debug("Set data response: {}", DataParser.bytesToHex(setDataResponse, true));
 
+            byte[] currentMachineState;
             if (parser.setDataCheck(setDataResponse)) {
                 logger.debug("Updated parameter {} successfully.", channelIds);
-                currentMachineState = setDataResponse;
+                // If header check passes, we assume that values have been set
+                // so we can decode the new values from the composed update request
+                currentMachineState = updateRequestMessage;
             } else {
                 logger.warn("Update for parameter {} failed!", channelIds);
-                currentMachineState = response;
+                currentMachineState = readResponse; // value hasn't been updated
             }
 
             return writeValueDefinitions.stream()
