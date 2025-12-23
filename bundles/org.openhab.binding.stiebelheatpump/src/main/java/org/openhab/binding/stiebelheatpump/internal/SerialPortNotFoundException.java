@@ -20,6 +20,9 @@ import org.openhab.binding.stiebelheatpump.exception.StiebelHeatPumpException;
  * @author Robin Windey - initial contribution
  */
 public class SerialPortNotFoundException extends StiebelHeatPumpException {
+
+    private static final long serialVersionUID = 1L;
+
     public SerialPortNotFoundException(String serialPort) {
         super("Serial port '" + serialPort + "' could not be found.");
     }

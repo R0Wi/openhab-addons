@@ -41,7 +41,7 @@ public class CircularByteBuffer {
     }
 
     public byte get() throws StiebelHeatPumpException {
-        logger.trace("get (Thread {} {})", Thread.currentThread().getId(), Thread.currentThread().getName());
+        logger.trace("get (Thread {} {})", Thread.currentThread().threadId(), Thread.currentThread().getName());
         if (!waitForData()) {
             throw new StiebelHeatPumpException("No data available!");
         }
@@ -57,7 +57,7 @@ public class CircularByteBuffer {
     }
 
     public void put(byte b) {
-        logger.trace("put (Thread {} {})", Thread.currentThread().getId(), Thread.currentThread().getName());
+        logger.trace("put (Thread {} {})", Thread.currentThread().threadId(), Thread.currentThread().getName());
         synchronized (buffer) {
             buffer[writePos] = b;
             currentSize++;

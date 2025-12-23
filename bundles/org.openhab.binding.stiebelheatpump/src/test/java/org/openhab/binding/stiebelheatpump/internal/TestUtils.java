@@ -43,6 +43,9 @@ public class TestUtils {
     public static void mockConfig(ConfigFileLoader configFileLoader, String config) {
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         URL congfigUrl = classLoader.getResource("HeatpumpConfig/" + config);
+        if (congfigUrl == null) {
+            throw new RuntimeException("Test config not found: " + config);
+        }
         when(configFileLoader.getConfig(anyString())).thenReturn(congfigUrl);
     }
 
@@ -71,6 +74,9 @@ public class TestUtils {
             String keyAttributeName, String valueAttributeName) {
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         URL xmlUrl = classLoader.getResource(xmlFile);
+        if (xmlUrl == null) {
+            throw new RuntimeException("Resource not found: " + xmlFile);
+        }
         try (InputStream inputStream = xmlUrl.openStream()) {
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
             DocumentBuilder builder = factory.newDocumentBuilder();
@@ -90,6 +96,9 @@ public class TestUtils {
     private static Map<String, String> getChannelItemTypes() {
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         URL xmlUrl = classLoader.getResource("OH-INF/thing/channel-types.xml");
+        if (xmlUrl == null) {
+            throw new RuntimeException("Resource not found: OH-INF/thing/channel-types.xml");
+        }
         try (InputStream inputStream = xmlUrl.openStream()) {
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
             DocumentBuilder builder = factory.newDocumentBuilder();
