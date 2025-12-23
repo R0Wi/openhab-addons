@@ -121,7 +121,7 @@ public class SerialConnector implements ProtocolConnector {
     public void write(byte[] data) throws StiebelHeatPumpException {
         try {
             String dataStr = DataParser.bytesToHex(data, true);
-            logger.trace("Send request message : {} (Thread {} {})", dataStr, Thread.currentThread().getId(),
+            logger.trace("Send request message : {} (Thread {} {})", dataStr, Thread.currentThread().threadId(),
                     Thread.currentThread().getName());
             out.write(data);
             out.flush();
@@ -134,7 +134,7 @@ public class SerialConnector implements ProtocolConnector {
     public void write(byte data) throws StiebelHeatPumpException {
         try {
             String byteStr = String.format("Send single byte request message %02X", data);
-            logger.trace("{} (Thread {} {})", byteStr, Thread.currentThread().getId(),
+            logger.trace("{} (Thread {} {})", byteStr, Thread.currentThread().threadId(),
                     Thread.currentThread().getName());
             out.write(data);
             out.flush();

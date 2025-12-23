@@ -91,7 +91,12 @@ public class CommunicationServiceImpl implements CommunicationService {
         logger.debug("Loading version info ...");
         Map<String, Object> data = readData(versionRequest);
         String versionKey = StiebelHeatPumpBindingConstants.CHANNEL_VERSION;
-        return data.get(versionKey).toString();
+        var versionObj = data.get(versionKey);
+        if (versionObj == null) {
+            logger.warn("Version key not found in response data!");
+            return "<UNKNOWN_VERSION>";
+        }
+        return versionObj.toString();
     }
 
     /**

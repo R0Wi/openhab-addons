@@ -207,7 +207,19 @@ public class StiebelHeatPumpHandler extends BaseThingHandler {
                         return;
                     }
 
-                    var channelType = getThing().getChannel(channelUID).getChannelTypeUID().toString();
+                    var channel = getThing().getChannel(channelUID);
+                    if (channel == null) {
+                        logger.warn("Channel {} not found in thing!", channelUID);
+                        return;
+                    }
+
+                    var channelTypeUID = channel.getChannelTypeUID();
+                    if (channelTypeUID == null) {
+                        logger.warn("ChannelTypeUID for channel {} is null!", channelUID);
+                        return;
+                    }
+
+                    var channelType = channelTypeUID.toString();
 
                     if (CHANNELTYPE_TIMESETTING_QUATER.equals(channelType)) {
                         /*
@@ -362,6 +374,9 @@ public class StiebelHeatPumpHandler extends BaseThingHandler {
         communicationService.connect();
         try {
             String thingFirmwareVersion = getThing().getProperties().get(Thing.PROPERTY_FIRMWARE_VERSION);
+            if (thingFirmwareVersion == null) {
+                thingFirmwareVersion = "<UNKNOWN_THING_FW_VERSION>";
+            }
             String version = communicationService.getVersion(versionRequest);
             logger.info("Heat pump has version {}", version);
             if (!thingFirmwareVersion.equals(version)) {
@@ -472,7 +487,7 @@ public class StiebelHeatPumpHandler extends BaseThingHandler {
             }
             ChannelUID channelUID = ch.getUID();
             ChannelTypeUID channelTypeUID = ch.getChannelTypeUID();
-            String channelType = channelTypeUID.toString();
+            String channelType = channelTypeUID != null ? channelTypeUID.toString() : "";
 
             if (channelType.equalsIgnoreCase(CHANNELTYPE_TIMESETTING)
                     | channelType.equalsIgnoreCase(CHANNELTYPE_ERRORTIME)) {
@@ -509,8 +524,19 @@ public class StiebelHeatPumpHandler extends BaseThingHandler {
     }
 
     private void updateStatus(Number value, ChannelUID channelUID) {
-        String itemType = getThing().getChannel(channelUID).getAcceptedItemType();
+        var channel = getThing().getChannel(channelUID);
+        if (channel == null) {
+            logger.warn("Channel {} not found in thing!", channelUID);
+            return;
+        }
+
+        var itemType = channel.getAcceptedItemType();
+
         if (value instanceof Double) {
+            if (itemType == null) {
+                logger.warn("No accepted item type for channel {} found, cannot update state.", channelUID);
+                return;
+            }
             switch (itemType) {
                 case "Number:Temperature":
                     QuantityType<Temperature> temperature = new QuantityType<>(value, SIUnits.CELSIUS);
