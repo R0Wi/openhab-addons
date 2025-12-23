@@ -224,7 +224,7 @@ public class StiebelHeatPumpHandler extends BaseThingHandler {
                     updateChannels(data);
             }
         } catch (Exception e) {
-            logger.debug("Exception occurred during execution: {}", e.getMessage(), e);
+            logger.error("Exception occurred during execution: {}", e.getMessage(), e);
             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.OFFLINE.COMMUNICATION_ERROR, e.getMessage());
         } finally {
             lastCommandExecuted = Instant.now();
@@ -713,7 +713,7 @@ public class StiebelHeatPumpHandler extends BaseThingHandler {
         Short valueStart, valueEnd;
         var commandedItemTimeString = command.toString();
 
-        if (commandedItemTimeString.isEmpty() || commandedItemTimeString.equals(UnDefType.NULL.toString())) {
+        if (isUninitializedTimeQuaterValue(commandedItemTimeString)) {
             // If the channel has been commanded to "empty", reset the whole pair.
             valueStart = valueEnd = StiebelHeatPumpBindingConstants.RESET_TIME_QUATER;
         } else {
@@ -733,16 +733,19 @@ public class StiebelHeatPumpHandler extends BaseThingHandler {
 
             try {
                 valueCommandedItem = calculateTimeQuaterValue(stringCommand);
-                if (otherItemTimeString.isEmpty() || otherItemTimeString.equals(UnDefType.NULL.toString())) {
+                if (isUninitializedTimeQuaterValue(otherItemTimeString)) {
                     // If the second channel of the pair is not set, we set
                     // it to the same value as the first one to create a "valid pair".
                     valueOther = valueCommandedItem;
                 } else {
                     valueOther = calculateTimeQuaterValue(stateOther);
                 }
-            } catch (IllegalArgumentException e) {
-                logger.warn("Could not parse time quater value", e);
-                return Map.of();
+            } catch (Exception e) {
+                if (e instanceof IllegalArgumentException || e instanceof IndexOutOfBoundsException) {
+                    logger.warn("Could not parse time quater value", e);
+                    return Map.of();
+                }
+                throw e;
             }
 
             if (commandedItemIsStart) {
@@ -794,5 +797,10 @@ public class StiebelHeatPumpHandler extends BaseThingHandler {
         var hours = zonedDateTime.getHour();
         var minutes = zonedDateTime.getMinute();
         return (short) (hours * 4 + minutes / 15);
+    }
+
+    private Boolean isUninitializedTimeQuaterValue(String itemStateString) {
+        return itemStateString.isEmpty()
+                || UnDefType.NULL.toString().toLowerCase().equals(itemStateString.toLowerCase());
     }
 }

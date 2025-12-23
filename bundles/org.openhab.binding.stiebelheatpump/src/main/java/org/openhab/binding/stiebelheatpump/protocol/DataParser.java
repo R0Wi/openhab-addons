@@ -14,7 +14,10 @@ package org.openhab.binding.stiebelheatpump.protocol;
 
 import java.nio.ByteBuffer;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 
 import org.openhab.binding.stiebelheatpump.exception.InvalidDataException;
 import org.openhab.binding.stiebelheatpump.exception.StiebelHeatPumpException;
@@ -51,12 +54,17 @@ public class DataParser {
     public static byte STARTCOMMUNICATION = (byte) 0x02;
     public static byte[] FOOTER = { ESCAPE, END };
     public static byte[] DATAAVAILABLE = { ESCAPE, STARTCOMMUNICATION };
-    private static byte[] UNKNOWN_COMMAND = { HEADERSTART, END };
+
+    private static final Set<Entry<byte[], String>> KNOWN_ERRORS = new HashSet<>() {
+        {
+            add(Map.entry(new byte[] { 0x01, 0x01 }, "decode: timing issue"));
+            add(Map.entry(new byte[] { 0x01, 0x02 }, "decode: CRC error in request"));
+            add(Map.entry(new byte[] { 0x01, 0x03 }, "decode: device doesn't know this command (unknown command)"));
+            add(Map.entry(new byte[] { 0x01, 0x04 }, "decode: UNKNOWN Register REQUEST"));
+        }
+    };
 
     protected static final char[] hexArray = "0123456789ABCDEF".toCharArray();
-
-    public DataParser() {
-    }
 
     /**
      * verifies response on availability of data
@@ -135,8 +143,13 @@ public class DataParser {
         String responseStr = bytesToHex(response, true);
         try {
             if (response.length < 2) {
-                logger.error("response does not have a valid length of bytes: {}", responseStr);
-                throw new InvalidDataException("response does not have a valid length of bytes");
+                throw new InvalidDataException(
+                        String.format("Response does not have a valid length of bytes %s", responseStr));
+            }
+            if (response.length < recordDefinition.getPosition() + recordDefinition.getLength()) {
+                throw new InvalidDataException(
+                        String.format("Response %s does not have a valid length of at least %d bytes", responseStr,
+                                recordDefinition.getPosition() + recordDefinition.getLength()));
             }
             short number = 0;
             ByteBuffer buffer = ByteBuffer.wrap(response);
@@ -178,9 +191,8 @@ public class DataParser {
 
             return number;
         } catch (Exception e) {
-            logger.error("response {} could not be parsed for record definition {} ", responseStr,
-                    recordDefinition.getChannelid());
-            throw new InvalidDataException("response could not be parsed for record definition");
+            throw new InvalidDataException(String.format("Response %s could not be parsed for record definition %s",
+                    responseStr, recordDefinition.getChannelid()), e);
         }
     }
 
@@ -295,7 +307,7 @@ public class DataParser {
 
         if (response.length < 4) {
             throw new StiebelHeatPumpException(
-                    "invalide response length on request of data " + bytesToHex(response, true));
+                    "invalid response length on request of data " + bytesToHex(response, true));
         }
 
         if (response[0] != HEADERSTART) {
@@ -304,17 +316,24 @@ public class DataParser {
         }
 
         if (response[1] != GET & response[1] != SET) {
-            if (response[0] == UNKNOWN_COMMAND[0] && response[1] == UNKNOWN_COMMAND[1]) {
-                throw new StiebelHeatPumpException(
-                        "device doesn't know this command (unknown command) on request of data: "
-                                + bytesToHex(response, true));
-            }
-            throw new StiebelHeatPumpException("invalid response on request of data, response is neither get nor set: "
-                    + bytesToHex(response, true));
+            checkKnownErrors(response);
+            throw new StiebelHeatPumpException(
+                    String.format("invalid response on request of data, response is neither get nor set: %s",
+                            bytesToHex(response, true)));
         }
 
         if (response[2] != calculateChecksum(response)) {
             throw new StiebelHeatPumpException("invalid checksum on request of data " + bytesToHex(response, true));
+        }
+    }
+
+    private void checkKnownErrors(byte[] response) throws StiebelHeatPumpException {
+        var knownError = KNOWN_ERRORS.stream()
+                .filter(entry -> entry.getKey()[0] == response[0] && entry.getKey()[1] == response[1]).findFirst()
+                .orElse(null);
+        if (knownError != null) {
+            throw new StiebelHeatPumpException(
+                    String.format("%s (Response: %s)", knownError.getValue(), bytesToHex(response, true)));
         }
     }
 
@@ -347,6 +366,7 @@ public class DataParser {
         try {
             verifyHeader(response);
         } catch (StiebelHeatPumpException e) {
+            logger.warn("Verification of header for set operation failed", e);
             return false;
         }
 
