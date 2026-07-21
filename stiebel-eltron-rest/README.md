@@ -196,6 +196,75 @@ an environment variable:
   #    else (baud_rate, waiting_time_ms, ...) comes from app.yaml
   ```
 
+## Quick start: wiring a real THZ / LWZ 504 (firmware 7.59)
+
+The 504 generation (**LWZ 504**, **THZ 504**, firmware **7.59** — the
+[`LWZ_THZ504_7_59.xml`](device_configs/LWZ_THZ504_7_59.xml) definition) is
+controlled through the **RS232 service / diagnostic interface** on its internal
+WPM controller board. No cloud, no ISG, no extra gateway: you wire that port to
+the machine running this service and talk to it over a plain serial line.
+
+### 1. Wire the serial interface
+
+The controller exposes three signals — **TX**, **RX** and **GND** — on the
+service connector. Cross TX↔RX and share the ground with a USB-to-serial
+adapter:
+
+```
+ Heat pump (WPM service port)             USB-serial adapter → host
+ ┌────────────────────────────┐          ┌─────────────────────────┐
+ │ TX  (pump → host) ─────────┼────────► │ RX                      │
+ │ RX  (host → pump) ◄────────┼──────────┤ TX                      │
+ │ GND ───────────────────────┼──────────┤ GND ───► /dev/ttyUSB0   │
+ └────────────────────────────┘          └─────────────────────────┘
+```
+
+* Use a **galvanically isolated USB-RS232 adapter** (FTDI / CP210x) — it
+  protects both the pump electronics and your host.
+* If your adapter is **TTL level** while the pump port is **true RS232**
+  (±12 V), put a **MAX232** level shifter in between. Wiring and schematics come
+  from the [heatpumpmonitor](https://launchpad.net/heatpumpmonitor) /
+  [robert.penz.name](http://robert.penz.name/heat-pump-lwz/) projects this
+  binding is based on.
+* This cable carries **signalling only** — nothing is powered over it.
+* Do the wiring with the heat pump **powered down**, and check your unit's
+  installation manual for the exact service-connector pinout.
+
+### 2. Find the port and baud rate
+
+Plug the adapter into the host; on Linux it appears as `/dev/ttyUSB0`
+(run `dmesg | tail` right after plugging in to confirm the name).
+
+The **303 / 403** run at **9600 baud**; the newer **404 / 504** generation at
+**57600** (some units at **115200**). Start at `57600` for a 504 — if reads time
+out or come back as garbage, try `115200` (or `9600`). It must match your unit.
+
+### 3. Point the service at it
+
+```yaml
+# config/app.yaml
+device_config: device_configs/LWZ_THZ504_7_59.xml   # match your 7.59 firmware
+transport: serial
+port: /dev/ttyUSB0
+baud_rate: 57600           # 9600 for 303/403; try 115200 if 57600 fails
+waiting_time_ms: 1200      # the 504 CPU is slow — leave slack between requests
+```
+
+```bash
+stiebel-heatpump-api --config config/app.yaml
+
+curl localhost:8000/version                    # confirms the link + firmware
+curl "localhost:8000/values?data_type=Sensor"  # live sensor readings
+curl -X POST localhost:8000/actions/set-time   # sync the pump clock to the host
+```
+
+If `GET /version` returns the expected firmware, the wiring and baud rate are
+correct and every channel in the definition is reachable over HTTP.
+
+> **Pump far from the host?** Put a small serial-to-network bridge (`ser2net`)
+> next to the heat pump, then re-expose it locally as a virtual serial port with
+> `socat pty,link=/dev/ttyUSB0 tcp:pumphost:5555` and point `port` at that pty.
+
 ## API
 
 | Method & path | Description |

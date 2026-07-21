@@ -20,8 +20,10 @@ logger = logging.getLogger(__name__)
 
 MAX_TRIES = 3
 
-# channel ids handled specially by set_time (see the binding's setTime)
-_TIME_FIELDS = ("weekday", "hours", "minutes", "seconds", "year", "month", "day")
+# The clock fields that are actually written, in order. Following FHEM
+# (00_THZ.pm), the device derives the weekday from the date and has no settable
+# "seconds" register, so neither is written -- only these five fields are.
+_CLOCK_FIELDS = ("day", "month", "year", "hours", "minutes")
 
 
 class CommunicationService:
@@ -115,7 +117,10 @@ class CommunicationService:
             parser.compose_record(value, update, record)
 
         time.sleep(self._waiting_time)
-        set_response = self._connector.set_data(bytes(update))
+        # Escape the composed frame before sending, exactly like the read path
+        # (create_request_message) and FHEM's THZ_encodecommand -- otherwise a
+        # 0x10 or 0x2B byte in the payload corrupts the frame on the wire.
+        set_response = self._connector.set_data(parser.add_duplicated_bytes(bytes(update)))
 
         if parser.header_check(set_response):
             logger.debug("Updated parameter %s successfully.", channel_ids)
@@ -131,50 +136,95 @@ class CommunicationService:
 
     # -- time synchronisation ------------------------------------------------
 
-    def set_time(self, time_request: Optional[Request]) -> dict[str, object]:
-        """Set the heat pump clock to the current system time."""
-        if time_request is None:
-            logger.warning("No time request definition; skip setting time.")
+    def set_time(
+        self,
+        read_request: Optional[Request],
+        clock_records: Optional[dict[str, ChannelDefinition]] = None,
+    ) -> dict[str, object]:
+        """Set the heat pump clock to the current system time.
+
+        ``clock_records`` maps each clock field (``day``, ``month``, ``year``,
+        ``hours``, ``minutes``) to the :class:`ChannelDefinition` of its
+        individual writable register (commands ``0A0122``..``0A0126``). This is
+        how firmware 4.39/5.39/7.x sets the clock in FHEM (``%sets439539common``
+        in ``00_THZ.pm``): every register is written on its own, with a
+        read-modify-write round trip. The read-only ``FC`` date/time register
+        used to *display* the clock cannot be written back -- which is why the
+        original whole-``FC``-frame write never worked.
+
+        When the device definition does not expose those registers (older 2.x
+        firmware, where FHEM writes the date/time fields straight into the ``FC``
+        register), the values are composed into ``read_request`` in a single
+        write instead.
+
+        ``read_request`` (the ``FC`` request) is finally read back so the
+        response reports the resulting device time.
+        """
+        now = datetime.now()
+        values: dict[str, object] = {
+            "day": now.day,
+            "month": now.month,
+            "year": now.year % 100,
+            "hours": now.hour,
+            "minutes": now.minute,
+        }
+
+        if clock_records:
+            written = self._set_time_via_registers(clock_records, values)
+        elif read_request is not None:
+            written = self._set_time_via_frame(read_request, values)
+        else:
+            logger.warning("No clock registers available; skip setting time.")
             return {}
 
-        self._start()
-        read_message = parser.create_request_message(time_request.request_bytes)
-        response = self._connector.get_data(read_message)
+        data: dict[str, object] = {}
+        if read_request is not None:
+            response = self._connector.get_data(
+                parser.create_request_message(read_request.request_bytes)
+            )
+            if parser.header_check(response):
+                data = parser.parse_records(response, read_request.records)
+        data.update(written)
+        data["lastUpdate"] = now.strftime("%Y-%m-%d %H:%M:%S")
+        return data
+
+    def _set_time_via_registers(
+        self, clock_records: dict[str, ChannelDefinition], values: dict[str, object]
+    ) -> dict[str, object]:
+        """Write each clock field to its own register (firmware 4.39/5.39/7.x)."""
+        written: dict[str, object] = {}
+        for field in _CLOCK_FIELDS:
+            record = clock_records.get(field)
+            if record is None:
+                continue
+            written.update(self._write_values([(values[field], record)]))
+            time.sleep(self._waiting_time)
+        return written
+
+    def _set_time_via_frame(
+        self, read_request: Request, values: dict[str, object]
+    ) -> dict[str, object]:
+        """Compose the date/time fields into the FC register (older 2.x firmware)."""
+        response = self._connector.get_data(
+            parser.create_request_message(read_request.request_bytes)
+        )
         if not parser.header_check(response):
             logger.warning("Could not read current time from heat pump.")
             return {}
 
-        now = datetime.now()
-        values = {
-            "weekday": now.weekday(),      # Mon=0 .. Sun=6, as the device expects
-            "hours": now.hour,
-            "minutes": now.minute,
-            "seconds": now.second,
-            "year": now.year % 100,
-            "month": now.month,
-            "day": now.day,
-        }
-
         update = bytearray(response)
-        for record in time_request.records:
-            if record.channel_id in _TIME_FIELDS:
+        written: dict[str, object] = {}
+        for record in read_request.records:
+            if record.channel_id in values:
                 parser.compose_record(values[record.channel_id], update, record)
+                written[record.channel_id] = values[record.channel_id]
 
         time.sleep(self._waiting_time)
-        self._connector.set_data(bytes(update))
+        self._connector.set_data(parser.add_duplicated_bytes(bytes(update)))
         time.sleep(self._waiting_time)
-
-        response = self._connector.get_data(read_message)
-        data = parser.parse_records(response, time_request.records)
-        data["lastUpdate"] = now.strftime("%Y-%m-%d %H:%M:%S")
-        return data
+        return written
 
     # -- helpers -------------------------------------------------------------
-
-    def _start(self) -> None:
-        # `set_time` in the binding sends an explicit start handshake up front;
-        # get_data/set_data already start their own, so nothing extra is needed.
-        return None
 
     def _restart(self) -> None:
         logger.debug("Restarting connector")

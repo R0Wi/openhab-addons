@@ -20,6 +20,18 @@ from .settings import AppSettings
 
 logger = logging.getLogger(__name__)
 
+# Clock field -> channel id of the individual writable register used to set the
+# heat pump clock on firmware 4.39/5.39/7.x (see the device configs and FHEM's
+# %sets439539common). Absent on older 2.x definitions, which fall back to
+# writing the FC register directly.
+_CLOCK_REGISTERS = {
+    "day": "pClockDay",
+    "month": "pClockMonth",
+    "year": "pClockYear",
+    "hours": "pClockHour",
+    "minutes": "pClockMinutes",
+}
+
 
 class ChannelNotFound(KeyError):
     """Raised when an unknown channel id is requested."""
@@ -130,8 +142,13 @@ class HeatPumpService:
 
     def set_time(self) -> dict[str, object]:
         request = self._config.request_by_bytes("FC")
+        clock_records = {}
+        for field, channel_id in _CLOCK_REGISTERS.items():
+            record = self._config.channel(channel_id)
+            if record is not None:
+                clock_records[field] = record
         with self._lock:
-            return self._communication.set_time(request)
+            return self._communication.set_time(request, clock_records)
 
     # -- helpers -------------------------------------------------------------
 
