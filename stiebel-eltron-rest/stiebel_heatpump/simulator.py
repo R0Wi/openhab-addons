@@ -25,11 +25,20 @@ class HeatPumpSimulator:
     def __init__(self, config: HeatPumpConfig, seed_values: Optional[dict[str, object]] = None) -> None:
         self._config = config
         self._store: dict[str, bytearray] = {}
-        # Requests using two commands (request_byte2) are answered as two
-        # fully independent commands on the wire; both need their own stored
-        # response frame, using the same record positions/lengths for both
-        # (parse_records() decodes response and response2 with the identical
-        # RecordDefinition list and combines them).
+        # A request with request_byte2 set is read as two fully independent
+        # commands, each with its own complete request/response round trip --
+        # see CommunicationServiceImpl.readData() in the original binding:
+        # `getData(createRequestMessage(request.getRequestByte2()))` is the
+        # exact same call used for a primary command, just with different
+        # command bytes. The original Java test suite confirms this with a
+        # captured device response for a *secondary* command on its own,
+        # e.g. "0100300A091B00011003" for command 0A091B (ported verbatim into
+        # test_read_request in tests/test_communication.py) -- a complete,
+        # well-formed, independently-addressable response frame. Both commands
+        # therefore need their own stored response frame here, built from the
+        # same record positions/lengths (parse_records() decodes response and
+        # response2 with the identical RecordDefinition list and combines them,
+        # see DataParser.parseRecords: `value2 * 1000 + valueShort`).
         self._command_to_request: dict[str, Request] = {}
         for request in config.requests:
             self._store[request.request_byte] = self._build_frame(request, request.request_bytes)
@@ -68,15 +77,34 @@ class HeatPumpSimulator:
         return frame
 
     def set_value(self, channel_id: str, value: object) -> None:
-        """Seed/override the value a channel will report on the next read."""
+        """Seed/override the value a channel will report on the next read.
+
+        For a channel whose request spans two independent commands
+        (``request_byte`` / ``request_byte2``), ``value`` is split the same
+        way ``parse_records()`` recombines them on read: the primary command's
+        frame carries ``value % 1000`` and the secondary command's frame
+        carries ``value // 1000`` -- see ``DataParser.parseRecords`` in the
+        original binding (``value2 * 1000 + valueShort``), reproduced in
+        ``protocol.parser.parse_records``.
+        """
         record = self._config.channel(channel_id)
         if record is None:
             return
         request = self._config.request_for_channel(channel_id)
         if request is None:
             return
+
         frame = self._store[request.request_byte]
-        self._encode(frame, record, value)
+        if request.request_byte2 and not isinstance(value, bool):
+            low, high = int(value) % 1000, int(value) // 1000
+            self._encode(frame, record, low)
+            frame2 = self._store[request.request_byte2]
+            self._encode(frame2, record, high)
+            frame2[1] = parser.GET
+            frame2[2] = parser.calculate_checksum(frame2)
+        else:
+            self._encode(frame, record, value)
+
         frame[1] = parser.GET
         frame[2] = parser.calculate_checksum(frame)
 

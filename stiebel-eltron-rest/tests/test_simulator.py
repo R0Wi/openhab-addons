@@ -71,3 +71,20 @@ def test_read_all_includes_two_command_channels(service):
 def test_two_command_channel_reads_without_error(service):
     value = service.read_channel("electrDHWDay")
     assert isinstance(value.value, int)
+
+
+def test_two_command_channel_seed_value_round_trips(thz504_config):
+    # Seeding must split the value across both stored frames the same way
+    # parse_records() recombines them on read (value2 * 1000 + value1), or a
+    # seeded two-command channel would silently read back wrong. 1511 encodes
+    # to the exact "01FF"/"0001" pair captured in the original Java test suite
+    # (CommunicationServiceTests: response "...01FF1003" / response2
+    # "...00011003" for electrDHWDay), so this also cross-checks the split
+    # against a real device capture, not just parse_records()'s own formula.
+    simulator = HeatPumpSimulator(thz504_config, seed_values={"electrDHWDay": 1511})
+    service = HeatPumpService(thz504_config, SimulatorTransport(simulator), waiting_time_ms=0)
+    service.connect()
+
+    assert service.read_channel("electrDHWDay").value == 1511
+
+    service.close()
