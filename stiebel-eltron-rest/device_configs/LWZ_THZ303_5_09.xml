@@ -3,7 +3,7 @@
 	<record channelid="version" requestByte="FD" dataType="Status" position="4" length="2" scale="0.01"
 		bitPosition="0" min="0" max="0" step="0.0"></record>
 	<record channelid="weekday" requestByte="FC" dataType="Settings" position="5" length="1" scale="1.0"
-		bitPosition="0" min="1" max="7" step="1.0"></record>
+		bitPosition="0" min="0" max="6" step="1.0"></record>
 	<record channelid="hours" requestByte="FC" dataType="Settings" position="6" length="1" scale="1.0"
 		bitPosition="0" min="0" max="23" step="1.0"></record>
 	<record channelid="minutes" requestByte="FC" dataType="Settings" position="7" length="1" scale="1.0"
@@ -16,6 +16,22 @@
 		bitPosition="0" min="1" max="12" step="1.0"></record>
 	<record channelid="day" requestByte="FC" dataType="Settings" position="12" length="1" scale="1.0"
 		bitPosition="0" min="1" max="31" step="1.0"></record>
+
+	<!-- Writable clock registers (firmware 4.39/5.39/7.x). The read-only FC date/time
+	     register above cannot be written back; the clock is set through these
+	     individual registers instead, exactly like FHEM 00_THZ.pm %sets439539common
+	     (pClockDay=0A0122, pClockMonth=0A0123, pClockYear=0A0124, pClockHour=0A0125,
+	     pClockMinutes=0A0126). -->
+	<record channelid="pClockDay" requestByte="0A0122" dataType="Settings" position="6" length="1" scale="1.0"
+		bitPosition="0" min="1" max="31" step="1.0"></record>
+	<record channelid="pClockMonth" requestByte="0A0123" dataType="Settings" position="6" length="1" scale="1.0"
+		bitPosition="0" min="1" max="12" step="1.0"></record>
+	<record channelid="pClockYear" requestByte="0A0124" dataType="Settings" position="6" length="1" scale="1.0"
+		bitPosition="0" min="0" max="99" step="1.0"></record>
+	<record channelid="pClockHour" requestByte="0A0125" dataType="Settings" position="6" length="1" scale="1.0"
+		bitPosition="0" min="0" max="23" step="1.0"></record>
+	<record channelid="pClockMinutes" requestByte="0A0126" dataType="Settings" position="6" length="1" scale="1.0"
+		bitPosition="0" min="0" max="59" step="1.0"></record>
 	<record channelid="collectorTemperature" requestByte="FB" dataType="Sensor" position="4" length="2" scale="0.1"
 		bitPosition="0" min="0" max="0" step="0.0"></record>
 	<record channelid="outsideTemperature" requestByte="FB" dataType="Sensor" position="6" length="2" scale="0.1"

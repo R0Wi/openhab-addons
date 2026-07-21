@@ -2,6 +2,8 @@
 binding's CommunicationServiceTests, verifying both decoded values and the
 bytes written to the wire."""
 
+from datetime import datetime
+
 import pytest
 
 from stiebel_heatpump.protocol import parser
@@ -9,6 +11,9 @@ from stiebel_heatpump.protocol.communication import CommunicationService
 from stiebel_heatpump.protocol.connector import Connector
 from stiebel_heatpump.protocol.parser import hex_to_bytes
 from stiebel_heatpump.protocol.transport import NoDataAvailable
+from stiebel_heatpump.service import HeatPumpService
+from stiebel_heatpump.simulator import HeatPumpSimulator
+from stiebel_heatpump.protocol.transport import SimulatorTransport
 
 
 class ScriptedTransport:
@@ -123,3 +128,63 @@ def test_read_request(thz504_config, request_byte, response1, response2, expecte
     result = service.read_request(request)
     for key, value in expected.items():
         assert result[key] == value
+
+
+def _sim_service(config):
+    service = HeatPumpService(config, SimulatorTransport(HeatPumpSimulator(config)), waiting_time_ms=0)
+    service.connect()
+    return service
+
+
+def test_set_time_writes_individual_clock_registers(thz504_config):
+    """Firmware 7.59 sets the clock through the individual 0A0122..0A0126
+    registers (as FHEM does), not by writing the read-only FC register."""
+    service = _sim_service(thz504_config)
+
+    now = datetime.now()
+    result = service.set_time()
+
+    expected = {
+        "pClockDay": now.day,
+        "pClockMonth": now.month,
+        "pClockYear": now.year % 100,
+        "pClockHour": now.hour,
+        "pClockMinutes": now.minute,
+    }
+    # values reported back and actually stored on the device match "now"
+    for channel_id, value in expected.items():
+        assert result[channel_id] == value
+        assert service.read_channel(channel_id).value == value
+
+    assert result["lastUpdate"].startswith(now.strftime("%Y-%m-%d %H:%M"))
+    # the device derives the weekday itself and has no settable seconds register,
+    # so neither is written
+    assert "weekday" not in {k for k in expected}
+
+
+def test_set_time_fallback_writes_fc_register(thz303_206_config):
+    """Older 2.x firmware has no individual clock registers, so the date/time
+    fields are composed straight into the FC register instead."""
+    service = _sim_service(thz303_206_config)
+
+    now = datetime.now()
+    result = service.set_time()
+
+    for channel_id, value in (
+        ("day", now.day),
+        ("month", now.month),
+        ("year", now.year % 100),
+        ("hours", now.hour),
+        ("minutes", now.minute),
+    ):
+        assert result[channel_id] == value
+        assert service.read_channel(channel_id).value == value
+
+
+@pytest.mark.parametrize("minute", [16, 43])  # encode to 0x10 / 0x2B -> must be escaped
+def test_write_escapes_payload_bytes(thz504_config, minute):
+    """A payload byte of 0x10 or 0x2B has to be escaped on the wire, otherwise
+    the frame is corrupted (regression test for the set path)."""
+    service = _sim_service(thz504_config)
+    service.write_channel("pClockMinutes", minute)
+    assert service.read_channel("pClockMinutes").value == minute
