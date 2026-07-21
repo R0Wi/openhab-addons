@@ -109,7 +109,7 @@ verified against the **exact byte vectors** from the binding's own Java tests
 ```bash
 cd stiebel-eltron-rest
 python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
+pip install -e .          # add `.[dev]` instead to also get pytest/httpx
 
 # Runs against the built-in simulator — no hardware needed.
 stiebel-heatpump-api --config config/app.example.yaml
@@ -119,11 +119,29 @@ stiebel-heatpump-api --config config/app.example.yaml
 Then open <http://localhost:8000/docs> for interactive Swagger UI, or
 <http://localhost:8000/openapi.json> for the generated spec.
 
+Dependencies are declared once, in [`pyproject.toml`](pyproject.toml) — it's
+also what makes this an installable package with a `stiebel-heatpump-api`
+console script. There is no separate `requirements.txt` to keep in sync.
+
+### Docker
+
+```bash
+docker compose up --build
+```
+
+This builds the `runtime` stage of the [`Dockerfile`](Dockerfile) and starts
+the API on <http://localhost:8000>, using the in-memory simulator by default
+(see `environment:` in [`docker-compose.yml`](docker-compose.yml) — no
+hardware needed). To talk to a real device instead, set `STIEBEL_TRANSPORT=serial`
+and uncomment the `devices:` passthrough for your USB-serial adapter (Linux
+hosts; see the comments in `docker-compose.yml`).
+
 ### Talking to a real device
 
-Copy `config/app.example.yaml` to `config/app.yaml` and set:
+Either a YAML file, environment variables, or both:
 
 ```yaml
+# config/app.yaml
 device_config: device_configs/LWZ_THZ504_7_59.xml   # match your firmware!
 transport: serial
 port: /dev/ttyUSB0
@@ -131,11 +149,41 @@ baud_rate: 9600
 waiting_time_ms: 1200
 ```
 
-Every setting can also be supplied via environment variable, e.g.
-`STIEBEL_TRANSPORT=serial STIEBEL_PORT=/dev/ttyUSB0`.
+```bash
+stiebel-heatpump-api --config config/app.yaml
+```
 
 Pick the `device_config` whose firmware version matches your heat pump (the
 version is reported by `GET /version`).
+
+#### Environment variables
+
+Every setting in [`AppSettings`](stiebel_heatpump/settings.py) can be set via
+an environment variable:
+
+* **Prefix:** `STIEBEL_`
+* **Naming convention:** `STIEBEL_` + the field name in `UPPER_SNAKE_CASE`,
+  e.g. `device_config` → `STIEBEL_DEVICE_CONFIG`, `waiting_time_ms` →
+  `STIEBEL_WAITING_TIME_MS`, `baud_rate` → `STIEBEL_BAUD_RATE`.
+* **Locating a YAML file via env var:** `STIEBEL_APP_CONFIG=/path/to/app.yaml`
+  is equivalent to passing `--config /path/to/app.yaml`.
+* **Precedence when a value is set in more than one place (highest wins):**
+
+  ```
+  environment variable  >  YAML file  >  built-in default
+  ```
+
+  This is deliberate: an image/deployment can ship a baked-in YAML file as its
+  base config, and individual values can still be overridden per-environment
+  with plain `docker run -e` / `environment:` entries, without touching the
+  file. See `docker-compose.yml` for an example that configures everything
+  purely via env vars (no YAML file at all).
+
+  ```bash
+  STIEBEL_TRANSPORT=serial STIEBEL_PORT=/dev/ttyUSB0 stiebel-heatpump-api --config config/app.yaml
+  # -> transport=serial (env wins), port=/dev/ttyUSB0 (env wins), everything
+  #    else (baud_rate, waiting_time_ms, ...) comes from app.yaml
+  ```
 
 ## API
 
