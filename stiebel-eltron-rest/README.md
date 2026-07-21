@@ -136,6 +136,17 @@ hardware needed). To talk to a real device instead, set `STIEBEL_TRANSPORT=seria
 and uncomment the `devices:` passthrough for your USB-serial adapter (Linux
 hosts; see the comments in `docker-compose.yml`).
 
+#### Dev container
+
+Open the `stiebel-eltron-rest` folder in VS Code and "Reopen in Container".
+The [`.devcontainer/devcontainer.json`](.devcontainer/devcontainer.json) builds
+the same [`Dockerfile`](Dockerfile) as production, targeting its `dev` stage —
+same Python version, OS packages and non-root user as the `runtime` image used
+by `docker-compose.yml`, just with pytest/httpx and a few CLI tools added on
+top. The workspace is bind-mounted over `/app` and `postCreateCommand`
+editable-installs the package (`pip install -e '.[dev]'`), so local edits take
+effect immediately — no rebuild, no reinstall.
+
 ### Talking to a real device
 
 Either a YAML file, environment variables, or both:
