@@ -15,10 +15,12 @@ from typing import Optional, Union
 
 from fastapi import Body, Depends, FastAPI, HTTPException, Query, Request
 from fastapi.openapi.utils import get_openapi
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from .config_loader import HeatPumpConfig, load_config
 from .models import ChannelDefinition, DataType, ValueKind
+from .protocol.parser import ProtocolError
 from .service import ChannelNotFound, ChannelNotWritable, HeatPumpService
 from .settings import AppSettings
 
@@ -111,9 +113,25 @@ def build_app(
     )
     app.state.config = config
 
+    app.add_exception_handler(ProtocolError, _protocol_error_handler)
     _register_routes(app)
     _install_dynamic_openapi(app, config)
     return app
+
+
+async def _protocol_error_handler(request: Request, exc: ProtocolError) -> JSONResponse:
+    """Map a device/transport communication failure to 503, everywhere.
+
+    This applies to every route, not just channel reads/writes: an
+    unreachable or misbehaving heat pump is a transport-level problem, and
+    must never be reported as "channel not found" (404) or silently papered
+    over with a stale/guessed value.
+    """
+    logger.warning("Heat pump communication error: %s", exc)
+    return JSONResponse(
+        status_code=503,
+        content={"detail": f"Could not communicate with the heat pump: {exc}"},
+    )
 
 
 def _register_routes(app: FastAPI) -> None:

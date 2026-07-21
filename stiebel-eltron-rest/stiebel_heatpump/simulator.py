@@ -25,8 +25,18 @@ class HeatPumpSimulator:
     def __init__(self, config: HeatPumpConfig, seed_values: Optional[dict[str, object]] = None) -> None:
         self._config = config
         self._store: dict[str, bytearray] = {}
+        # Requests using two commands (request_byte2) are answered as two
+        # fully independent commands on the wire; both need their own stored
+        # response frame, using the same record positions/lengths for both
+        # (parse_records() decodes response and response2 with the identical
+        # RecordDefinition list and combines them).
+        self._command_to_request: dict[str, Request] = {}
         for request in config.requests:
-            self._store[request.request_byte] = self._build_frame(request)
+            self._store[request.request_byte] = self._build_frame(request, request.request_bytes)
+            self._command_to_request[request.request_byte] = request
+            if request.request_byte2:
+                self._store[request.request_byte2] = self._build_frame(request, request.request_bytes2)
+                self._command_to_request[request.request_byte2] = request
 
         seeds = dict(seed_values or {})
         seeds.setdefault("version", self._default_version())
@@ -46,13 +56,12 @@ class HeatPumpSimulator:
             return float(f"{digits[-2]}.{digits[-1]}")
         return 7.59
 
-    def _build_frame(self, request: Request) -> bytearray:
+    def _build_frame(self, request: Request, command_bytes: bytes) -> bytearray:
         data_end = max((r.position + r.length for r in request.records), default=5)
         frame = bytearray(data_end + 2)
         frame[0] = parser.HEADER_START
         frame[1] = parser.GET
-        request_bytes = request.request_bytes
-        frame[3 : 3 + len(request_bytes)] = request_bytes
+        frame[3 : 3 + len(command_bytes)] = command_bytes
         frame[-2] = parser.ESCAPE
         frame[-1] = parser.END
         frame[2] = parser.calculate_checksum(frame)
@@ -130,22 +139,29 @@ class HeatPumpSimulator:
 
         return b""
 
-    def _match_request(self, frame: bytes) -> Optional[Request]:
-        best: Optional[Request] = None
-        for request in self._config.requests:
-            request_bytes = request.request_bytes
-            if frame[3 : 3 + len(request_bytes)] == request_bytes:
-                if best is None or len(request_bytes) > len(best.request_bytes):
-                    best = request
+    def _match_command(self, frame: bytes) -> Optional[str]:
+        """Return the stored command key (hex) matching the sent frame, if any.
+
+        Matches against every known command -- both primary ``request_byte``
+        and secondary ``request_byte2`` values, since the device answers each
+        as an independent command -- preferring the longest match to
+        disambiguate overlapping prefixes.
+        """
+        best: Optional[str] = None
+        for command_hex in self._command_to_request:
+            command_bytes = bytes.fromhex(command_hex)
+            if frame[3 : 3 + len(command_bytes)] == command_bytes:
+                if best is None or len(command_bytes) > len(bytes.fromhex(best)):
+                    best = command_hex
         return best
 
     def _build_response(self, frame: bytes) -> bytes:
         if len(frame) < 4:
             return bytes([parser.HEADER_START, parser.GET, 0x00, 0x00]) + parser.FOOTER
-        request = self._match_request(frame)
+        command_hex = self._match_command(frame)
         get_or_set = frame[1]
 
-        if request is None:
+        if command_hex is None:
             command = frame[3:4] if len(frame) > 4 else b"\x00"
             error = bytearray([parser.HEADER_START, 0x03, 0x00]) + command + parser.FOOTER
             error[2] = parser.calculate_checksum(error)
@@ -156,9 +172,9 @@ class HeatPumpSimulator:
             updated = bytearray(frame)
             updated[1] = parser.GET
             updated[2] = parser.calculate_checksum(updated)
-            self._store[request.request_byte] = updated
-            confirm = bytearray([parser.HEADER_START, parser.SET, 0x00]) + request.request_bytes + parser.FOOTER
+            self._store[command_hex] = updated
+            confirm = bytearray([parser.HEADER_START, parser.SET, 0x00]) + bytes.fromhex(command_hex) + parser.FOOTER
             confirm[2] = parser.calculate_checksum(confirm)
             return bytes(confirm)
 
-        return bytes(self._store[request.request_byte])
+        return bytes(self._store[command_hex])

@@ -166,12 +166,25 @@ class HeatPumpService:
                 requests.append(request)
         return requests
 
-    @staticmethod
-    def _coerce(record: ChannelDefinition, value: object) -> object:
+    _TRUE_STRINGS = frozenset({"1", "true", "on", "yes"})
+    _FALSE_STRINGS = frozenset({"0", "false", "off", "no"})
+
+    @classmethod
+    def _coerce(cls, record: ChannelDefinition, value: object) -> object:
         kind = record.value_kind
         if kind == ValueKind.BOOLEAN:
+            if isinstance(value, bool):
+                return value
             if isinstance(value, str):
-                return value.strip().lower() in ("1", "true", "on", "yes")
+                normalized = value.strip().lower()
+                if normalized in cls._TRUE_STRINGS:
+                    return True
+                if normalized in cls._FALSE_STRINGS:
+                    return False
+                raise ValueError(
+                    f"Invalid boolean value '{value}' for channel '{record.channel_id}'; "
+                    f"expected one of {sorted(cls._TRUE_STRINGS | cls._FALSE_STRINGS)}"
+                )
             return bool(value)
         if kind == ValueKind.NUMBER:
             return float(value)  # type: ignore[arg-type]

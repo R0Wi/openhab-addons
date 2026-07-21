@@ -90,6 +90,14 @@ class Connector:
                 except NoDataAvailable:
                     buffer_retry += 1
                     continue
+                if num_read >= len(buffer):
+                    # Bytes keep arriving but never signal "data available" --
+                    # a noisy line or a stuck device, not a transient hiccup.
+                    # Fail cleanly instead of overflowing the fixed buffer.
+                    raise parser.ProtocolError(
+                        "Received too much data while waiting for the "
+                        "data-available signal; giving up."
+                    )
                 buffer[num_read] = single
                 num_read += 1
                 if buffer[0] != parser.DATA_AVAILABLE[0] or buffer[1] != parser.DATA_AVAILABLE[1]:
@@ -110,6 +118,13 @@ class Connector:
             except NoDataAvailable:
                 retry += 1
                 continue
+            if num_read >= len(buffer):
+                # Same rationale as above: bytes keep coming but the footer
+                # never shows up. Raise rather than overflow; get_data()'s
+                # caller already treats a receive failure as "no data".
+                raise parser.ProtocolError(
+                    "Received too much data while waiting for the end-of-frame footer; giving up."
+                )
             buffer[num_read] = single
             num_read += 1
             if (

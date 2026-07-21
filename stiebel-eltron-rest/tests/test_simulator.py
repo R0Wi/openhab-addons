@@ -54,3 +54,20 @@ def test_read_all_returns_sensors(service):
     ids = {v.channel_id for v in values}
     assert "outsideTemperature" in ids
     assert all(v.data_type.value in ("Sensor", "Status") for v in values)
+
+
+def test_read_all_includes_two_command_channels(service):
+    # electrDHWDay/electrHCDay are read via request_byte *and* request_byte2
+    # (two independent commands combined into one value). The simulator used
+    # to only ever store a response frame for the primary request_byte, so
+    # the secondary command came back as an "unknown command" error and the
+    # whole request silently vanished from read_all()'s result.
+    values = service.read_all()
+    ids = {v.channel_id for v in values}
+    assert "electrDHWDay" in ids
+    assert "electrHCDay" in ids
+
+
+def test_two_command_channel_reads_without_error(service):
+    value = service.read_channel("electrDHWDay")
+    assert isinstance(value.value, int)

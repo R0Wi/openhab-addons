@@ -50,30 +50,44 @@ class CommunicationService:
         return str(version)
 
     def read_request(self, request: Request) -> dict[str, object]:
-        """Read a single request (with retries + header validation)."""
-        count = 0
-        while count < MAX_TRIES:
-            count += 1
+        """Read a single request (with retries + header validation).
+
+        Raises :class:`~stiebel_heatpump.protocol.parser.ProtocolError` if the
+        device cannot be read after ``MAX_TRIES`` attempts. Callers must not
+        treat "no data" as "the channel doesn't exist" -- an unreachable
+        device and an unknown channel id are different failure modes and are
+        surfaced differently by the service/API layers.
+        """
+        last_error: Optional[str] = None
+        for attempt in range(1, MAX_TRIES + 1):
             try:
                 response = self._connector.get_data(
                     parser.create_request_message(request.request_bytes)
                 )
-                if parser.header_check(response):
-                    if request.request_bytes2 is None:
-                        return parser.parse_records(response, request.records)
-                    time.sleep(self._waiting_time)
-                    response2 = self._connector.get_data(
-                        parser.create_request_message(request.request_bytes2)
+                if not parser.header_check(response):
+                    raise parser.ProtocolError(
+                        f"invalid or missing response: {parser.bytes_to_hex(response)}"
                     )
-                    if parser.header_check(response2):
-                        return parser.parse_records(response, request.records, response2)
-                return {}
+                if request.request_bytes2 is None:
+                    return parser.parse_records(response, request.records)
+                time.sleep(self._waiting_time)
+                response2 = self._connector.get_data(
+                    parser.create_request_message(request.request_bytes2)
+                )
+                if not parser.header_check(response2):
+                    raise parser.ProtocolError(
+                        f"invalid or missing response2: {parser.bytes_to_hex(response2)}"
+                    )
+                return parser.parse_records(response, request.records, response2)
             except parser.ProtocolError as exc:
+                last_error = str(exc)
                 logger.warning("Error reading data for %s: %s (retry %s)",
-                               request.request_byte, exc, count)
+                               request.request_byte, exc, attempt)
                 self._restart()
-        logger.warning("read_request failed %s times!", MAX_TRIES)
-        return {}
+        raise parser.ProtocolError(
+            f"Could not read data for request {request.request_byte} after "
+            f"{MAX_TRIES} attempts: {last_error}"
+        )
 
     def read_requests(self, requests: list[Request]) -> dict[str, object]:
         """Read a list of requests, pausing ``waiting_time`` between them."""
@@ -109,8 +123,15 @@ class CommunicationService:
             logger.debug("Current value(s) for %s already set.", channel_ids)
             return {}
         if not read_response:
-            logger.warning("No response while reading current value for %s", channel_ids)
-            return {}
+            # We could not even read the current state, so no write was
+            # attempted at all. This must not be reported as success with the
+            # caller's requested value substituted in -- raise instead of
+            # returning {}, so the caller can tell "write failed" apart from
+            # "value already matched, nothing to do".
+            raise parser.ProtocolError(
+                f"Could not read current value(s) for {channel_ids} before writing; "
+                "write was not attempted."
+            )
 
         update = bytearray(read_response)
         for value, record in items:
