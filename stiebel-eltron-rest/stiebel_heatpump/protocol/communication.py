@@ -143,15 +143,27 @@ class CommunicationService:
         # 0x10 or 0x2B byte in the payload corrupts the frame on the wire.
         set_response = self._connector.set_data(parser.add_duplicated_bytes(bytes(update)))
 
-        if parser.header_check(set_response):
-            logger.debug("Updated parameter %s successfully.", channel_ids)
-            current_state: bytes = bytes(update)
-        else:
-            logger.warning("Verification of header for set operation failed")
-            current_state = read_response
+        try:
+            parser.verify_header(set_response)
+        except parser.ProtocolError as exc:
+            # The device did not confirm the SET, so it still holds the old
+            # value. The binding only logged a warning here and reported the
+            # unchanged value as if the call had succeeded; for a REST API that
+            # turns a rejected write into a 200, so raise instead. The device's
+            # own error text (from verify_header) and the value it kept are
+            # both included, so the caller learns why the write was refused.
+            unchanged = {
+                record.channel_id: parser.parse_record(read_response, record)
+                for _, record in items
+            }
+            raise parser.WriteNotConfirmed(
+                f"Heat pump did not confirm the write of {channel_ids} ({exc}); "
+                f"the device still reports {unchanged}."
+            ) from exc
 
+        logger.debug("Updated parameter %s successfully.", channel_ids)
         return {
-            record.channel_id: parser.parse_record(current_state, record)
+            record.channel_id: parser.parse_record(bytes(update), record)
             for _, record in items
         }
 

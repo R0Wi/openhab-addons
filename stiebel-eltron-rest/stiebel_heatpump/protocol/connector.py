@@ -127,10 +127,6 @@ class Connector:
                 )
             buffer[num_read] = single
             num_read += 1
-            if (
-                num_read > 4
-                and buffer[num_read - 2] == parser.ESCAPE
-                and buffer[num_read - 1] == parser.END
-            ):
+            if num_read > 4 and parser.is_frame_end(buffer, num_read):
                 break
         return parser.fix_duplicated_bytes(bytes(buffer[:num_read]))

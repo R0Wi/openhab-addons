@@ -12,7 +12,6 @@ from typing import Iterable, Optional
 
 from .config_loader import HeatPumpConfig, Request
 from .models import ChannelDefinition, ChannelValue, DataType, ValueKind
-from .protocol import parser
 from .protocol.communication import CommunicationService
 from .protocol.connector import Connector
 from .protocol.transport import SerialTransport, SimulatorTransport, Transport
@@ -99,7 +98,15 @@ class HeatPumpService:
         return self._to_channel_value(record, data[channel_id])
 
     def read_channels(self, channel_ids: Iterable[str]) -> list[ChannelValue]:
+        """Read several channels at once.
+
+        Raises :class:`ChannelNotFound` if *any* requested id is unknown, rather
+        than silently returning a shorter list than the caller asked for.
+        """
         wanted = list(channel_ids)
+        unknown = [cid for cid in wanted if self._config.channel(cid) is None]
+        if unknown:
+            raise ChannelNotFound(", ".join(unknown))
         requests = self._requests_for(wanted)
         wanted_set = set(wanted)
         results: list[ChannelValue] = []

@@ -119,7 +119,9 @@ class HeatPumpSimulator:
                 frame[record.position] = 1 if value else 0
             return
         if isinstance(value, float):
-            short_value = int(round(value / record.scale))
+            # Same rounding as the real write path (parser.compose_record), so
+            # seeded values and written values cannot encode differently.
+            short_value = parser.scaled_to_raw(value, record.scale)
         else:
             short_value = int(value)
         encoded = parser.short_to_bytes(short_value)
@@ -148,11 +150,7 @@ class HeatPumpSimulator:
 
         if self._state == _COLLECTING:
             self._frame_buffer.append(byte)
-            if (
-                len(self._frame_buffer) >= 6
-                and self._frame_buffer[-2] == parser.ESCAPE
-                and self._frame_buffer[-1] == parser.END
-            ):
+            if len(self._frame_buffer) >= 6 and parser.is_frame_end(self._frame_buffer):
                 self._pending = parser.fix_duplicated_bytes(bytes(self._frame_buffer))
                 self._state = _AWAIT_ACK
                 return bytes(parser.DATA_AVAILABLE)

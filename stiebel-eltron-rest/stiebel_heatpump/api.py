@@ -20,7 +20,7 @@ from pydantic import BaseModel
 
 from .config_loader import HeatPumpConfig, load_config
 from .models import ChannelDefinition, DataType, ValueKind
-from .protocol.parser import ProtocolError
+from .protocol.parser import ProtocolError, WriteNotConfirmed
 from .service import ChannelNotFound, ChannelNotWritable, HeatPumpService
 from .settings import AppSettings
 
@@ -113,7 +113,11 @@ def build_app(
     )
     app.state.config = config
 
+    # Order does not matter: Starlette walks the exception's MRO and picks the
+    # most specific registered handler, so WriteNotConfirmed (a ProtocolError)
+    # gets 502 while everything else protocol-related gets 503.
     app.add_exception_handler(ProtocolError, _protocol_error_handler)
+    app.add_exception_handler(WriteNotConfirmed, _write_not_confirmed_handler)
     _register_routes(app)
     _install_dynamic_openapi(app, config)
     return app
@@ -132,6 +136,17 @@ async def _protocol_error_handler(request: Request, exc: ProtocolError) -> JSONR
         status_code=503,
         content={"detail": f"Could not communicate with the heat pump: {exc}"},
     )
+
+
+async def _write_not_confirmed_handler(request: Request, exc: WriteNotConfirmed) -> JSONResponse:
+    """Map a write the device refused to confirm to 502.
+
+    The serial link is working -- the device answered, it just did not accept
+    the SET -- so this is neither "device unreachable" (503) nor a success. It
+    must not be a 200: the value on the device is still the old one.
+    """
+    logger.warning("Heat pump did not confirm write: %s", exc)
+    return JSONResponse(status_code=502, content={"detail": str(exc)})
 
 
 def _register_routes(app: FastAPI) -> None:
@@ -172,12 +187,23 @@ def _register_routes(app: FastAPI) -> None:
              response_model=list[ValueResponse])
     def read_values(
         ids: Optional[str] = Query(None, description="Comma-separated channel ids to read."),
-        data_type: Optional[DataType] = Query(None, description="Read all channels of this category."),
+        data_type: Optional[DataType] = Query(
+            None,
+            description=(
+                "Read all channels of this category. Ignored when `ids` is given; "
+                "when neither is given, Sensor and Status channels are read."
+            ),
+        ),
         service: HeatPumpService = Depends(get_service),
     ) -> list[ValueResponse]:
         if ids:
             channel_ids = [part.strip() for part in ids.split(",") if part.strip()]
-            values = service.read_channels(channel_ids)
+            try:
+                values = service.read_channels(channel_ids)
+            except ChannelNotFound as exc:
+                raise HTTPException(
+                    status_code=404, detail=f"Unknown channel(s): {exc.args[0]}"
+                ) from exc
         else:
             types = {data_type} if data_type else None
             values = service.read_all(types)

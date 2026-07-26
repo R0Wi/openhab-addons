@@ -1,9 +1,12 @@
 from pathlib import Path
 
+import pytest
+
 from stiebel_heatpump.config_loader import load_config, load_xml, load_yaml
 from stiebel_heatpump.models import DataType, ValueKind
 
 ROOT = Path(__file__).resolve().parent.parent
+DEVICE_CONFIGS = ROOT / "device_configs"
 
 
 def test_load_all_xml_configs():
@@ -41,3 +44,39 @@ def test_load_yaml_native_format():
 
 def test_load_config_dispatch():
     assert load_config(ROOT / "device_configs" / "LWZ_THZ504_7_59.xml").channels
+
+
+BINDING_CONFIGS = (
+    ROOT.parent
+    / "bundles"
+    / "org.openhab.binding.stiebelheatpump"
+    / "src"
+    / "main"
+    / "resources"
+    / "HeatpumpConfig"
+)
+
+# The only channels device_configs/ adds on top of the binding's own files:
+# the writable clock registers the binding has no code path for (its setTime
+# writes the read-only FC frame instead). See "Deviations from the binding" in
+# the README.
+_EXPECTED_EXTRA_CHANNELS = {
+    "pClockDay", "pClockMonth", "pClockYear", "pClockHour", "pClockMinutes",
+}
+
+
+@pytest.mark.skipif(not BINDING_CONFIGS.is_dir(), reason="binding sources not present")
+@pytest.mark.parametrize("path", sorted(DEVICE_CONFIGS.glob("*.xml")), ids=lambda p: p.name)
+def test_device_config_matches_binding_resource(path):
+    """The copies under device_configs/ must not drift from the binding's own
+    XML files beyond the documented clock-register addition."""
+    binding = BINDING_CONFIGS / path.name
+    assert binding.is_file(), f"no binding counterpart for {path.name}"
+
+    ours = {c.channel_id: c for c in load_xml(path).channels}
+    theirs = {c.channel_id: c for c in load_xml(binding).channels}
+
+    assert set(ours) - set(theirs) <= _EXPECTED_EXTRA_CHANNELS
+    assert not set(theirs) - set(ours), "channels dropped from the copy"
+    for channel_id, record in theirs.items():
+        assert ours[channel_id] == record, f"{channel_id} differs from the binding"

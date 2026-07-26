@@ -4,10 +4,10 @@ import pytest
 from fastapi.testclient import TestClient
 
 from stiebel_heatpump.api import build_app
+from stiebel_heatpump.protocol.transport import SimulatorTransport
 from stiebel_heatpump.service import HeatPumpService
 from stiebel_heatpump.settings import AppSettings
 from stiebel_heatpump.simulator import HeatPumpSimulator
-from stiebel_heatpump.protocol.transport import SimulatorTransport
 
 
 @pytest.fixture

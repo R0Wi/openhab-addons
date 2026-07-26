@@ -2,9 +2,9 @@
 
 import pytest
 
+from stiebel_heatpump.protocol.transport import SimulatorTransport
 from stiebel_heatpump.service import ChannelNotWritable, HeatPumpService
 from stiebel_heatpump.simulator import HeatPumpSimulator
-from stiebel_heatpump.protocol.transport import SimulatorTransport
 
 
 @pytest.fixture

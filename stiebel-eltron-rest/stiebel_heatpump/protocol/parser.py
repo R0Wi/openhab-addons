@@ -16,6 +16,10 @@ escape frames that are sent.
 
 The functions here are deliberately free of any I/O so they can be unit tested
 against the exact byte vectors used by the original Java test suite.
+
+Where this port knowingly deviates from ``DataParser`` the divergence is called
+out in a ``Deviation:`` note on the function in question, and summarised in the
+"Deviations from the binding" section of the README.
 """
 
 from __future__ import annotations
@@ -24,7 +28,7 @@ import math
 import struct
 from typing import Optional, Union
 
-from ..models import ChannelDefinition, ValueKind
+from ..models import ChannelDefinition
 
 # Protocol constants (see DataParser.java)
 ESCAPE = 0x10
@@ -35,9 +39,6 @@ SET = 0x80
 START_COMMUNICATION = 0x02
 FOOTER = bytes([ESCAPE, END])
 DATA_AVAILABLE = bytes([ESCAPE, START_COMMUNICATION])
-
-# A time-quarter slot that is not set carries the value 0x80 (-128 signed).
-RESET_TIME_QUARTER = -128
 
 # Known error codes returned by the device in the get/set byte position.
 _KNOWN_ERRORS: dict[tuple[int, int], str] = {
@@ -51,11 +52,35 @@ DecodedValue = Union[bool, int, float]
 
 
 class ProtocolError(Exception):
-    """Raised for malformed frames or device error responses."""
+    """Raised for malformed frames or device error responses.
+
+    Everything deriving from this means "the conversation with the device went
+    wrong" -- it is mapped to a 5xx by the API layer. Bad *caller input* must
+    not derive from it (see :class:`ValueOutOfRange`).
+    """
 
 
 class InvalidDataException(ProtocolError):
     """Raised when a single record cannot be parsed from a response."""
+
+
+class WriteNotConfirmed(ProtocolError):
+    """Raised when the device did not confirm a SET frame.
+
+    The write reached the device but was rejected (or the confirmation was
+    lost), so the value on the device is still the old one. Distinct from a
+    plain :class:`ProtocolError` because the link itself is working.
+    """
+
+
+class ValueOutOfRange(ValueError):
+    """Raised when a caller-supplied value violates a record's min/max.
+
+    This is a *client* error, not a device error, so it deliberately derives
+    from :class:`ValueError` (-> HTTP 400) rather than from
+    :class:`ProtocolError` (-> HTTP 503). The binding used its generic
+    ``InvalidDataException`` here, which conflated the two.
+    """
 
 
 def bytes_to_hex(data: bytes) -> str:
@@ -112,6 +137,14 @@ def fix_duplicated_bytes(data: bytes) -> bytes:
     """De-escape a received frame: collapse ``0x10 0x10`` and ``0x2B 0x18``.
 
     Operates on everything except the trailing footer, then re-appends ``0x10 0x03``.
+
+    Deviation: the binding's ``findReplace`` restarts its search at index 0 after
+    every substitution, so a run of escaped bytes is collapsed repeatedly --
+    ``10 10 10 10`` (two escaped ``0x10`` payload bytes) becomes a single
+    ``0x10`` there instead of two. ``bytes.replace`` scans left to right without
+    re-examining what it already emitted, which is what the protocol actually
+    requires; ``add_duplicated_bytes`` round-trips correctly here and does not
+    in the binding.
     """
     if len(data) < 2:
         return data
@@ -121,11 +154,26 @@ def fix_duplicated_bytes(data: bytes) -> bytes:
     return body + FOOTER
 
 
-def _get_bit(value: int, bit_position: int) -> bool:
-    pos_byte = bit_position // 8
-    pos_bit = bit_position % 8
-    # value here is a single byte (0..255); higher-byte selection is done by caller
-    return ((value >> (8 - (pos_bit + 1))) & 0x0001) >= 1
+def is_frame_end(buffer: "bytes | bytearray", length: Optional[int] = None) -> bool:
+    """Whether ``buffer[:length]`` ends with a real ``0x10 0x03`` footer.
+
+    Deviation: a payload byte ``0x10`` is escaped as ``0x10 0x10``, so a payload
+    ``0x10 0x03`` arrives on the wire as ``10 10 03`` -- whose last two bytes
+    look exactly like the footer. The binding's receive loop breaks there and
+    truncates the frame mid-payload. Escaped payload bytes always come in
+    pairs, so the real footer is the one that leaves an *odd* number of
+    consecutive ``0x10`` bytes in front of the ``0x03``.
+    """
+    if length is None:
+        length = len(buffer)
+    if length < 2 or buffer[length - 1] != END or buffer[length - 2] != ESCAPE:
+        return False
+    escapes = 0
+    index = length - 2
+    while index >= 0 and buffer[index] == ESCAPE:
+        escapes += 1
+        index -= 1
+    return escapes % 2 == 1
 
 
 def _get_bit_from_bytes(data: bytes, bit_position: int) -> bool:
@@ -229,6 +277,10 @@ def parse_records(
 
     When ``response2`` is given (two-command values), short values are combined
     as ``value2 * 1000 + value1`` -- exactly like the binding.
+
+    Deviation: the binding casts that sum back to a 16-bit ``short``, so a
+    counter above 32767 wraps to a negative number (e.g. 100999 -> -30073). The
+    combined value is kept intact here.
     """
     result: dict[str, DecodedValue] = {}
     if len(response) < 2:
@@ -254,12 +306,28 @@ def _is_short_result(value: DecodedValue, record: ChannelDefinition) -> bool:
     return isinstance(value, int) and not isinstance(value, bool) and record.length != 4
 
 
+def scaled_to_raw(value: float, scale: float) -> int:
+    """Convert a scaled (human) value into the raw integer stored on the device.
+
+    Deviation: the binding truncates (``(short) (value / scale)``), which loses
+    a step whenever the division lands just below the intended integer in
+    binary floating point -- ``21.7 / 0.1`` is ``216.99999999999997``, so a
+    requested 21.7 C was silently written as 21.6 C. Rounding half up (the same
+    ``Math.round`` semantics ``parse_record`` already reproduces on the way
+    back) makes the write round-trip through ``parse_record`` exactly.
+    """
+    return int(math.floor(value / scale + 0.5))
+
+
 def compose_record(new_value: DecodedValue, response: bytearray, record: ChannelDefinition) -> bytearray:
     """Write ``new_value`` into a copy-of-read ``response`` and turn it into a set frame.
 
     Mutates ``response`` in place: flips the get byte to ``SET``, encodes the
     value at the record's position and recomputes the checksum. Returns the same
     ``bytearray`` for convenience.
+
+    Raises :class:`ValueOutOfRange` (a ``ValueError``) if the value violates the
+    record's ``min``/``max``.
     """
     response[1] = SET
 
@@ -271,20 +339,15 @@ def compose_record(new_value: DecodedValue, response: bytearray, record: Channel
         else:
             response[record.position] = 1 if new_value else 0
     else:
+        if new_value > record.max or new_value < record.min:
+            raise ValueOutOfRange(
+                f"The record {record.channel_id} cannot be set to {new_value}; "
+                f"allowed range is {record.min}<-->{record.max}!"
+            )
         if isinstance(new_value, float):
-            if new_value > record.max or new_value < record.min:
-                raise InvalidDataException(
-                    f"The record {record.channel_id} cannot be set to {new_value}; "
-                    f"allowed range is {record.min}<-->{record.max}!"
-                )
-            short_value = int(new_value / record.scale)
+            short_value = scaled_to_raw(new_value, record.scale)
         else:
             short_value = int(new_value)
-            if short_value > record.max or short_value < record.min:
-                raise InvalidDataException(
-                    f"The record {record.channel_id} cannot be set to {new_value}; "
-                    f"allowed range is {record.min}<-->{record.max}!"
-                )
 
         encoded = short_to_bytes(short_value)  # [low, high]
         if record.length == 1:

@@ -12,9 +12,12 @@ device_config: device_configs/LWZ_THZ504_7_59.xml
 # Switch to "serial" to talk to a real device.
 transport: simulator
 
-# Only used when transport: serial
+# Only used when transport: serial.
+# baud_rate must match the firmware: 9600 for the 2.06/2.36/4.19 definitions,
+# 115200 for 5.09/5.39/7.39/7.59/7.62 (these are the binding's own thing-type
+# defaults). The value below matches the device_config selected above.
 port: /dev/ttyUSB0
-baud_rate: 9600
+baud_rate: 115200
 waiting_time_ms: 1200
 
 title: "Stiebel Eltron Heat Pump API"

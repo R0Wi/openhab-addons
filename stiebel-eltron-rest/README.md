@@ -27,8 +27,10 @@ The openHAB binding couples three concerns that are really independent:
    described entirely by per-firmware XML files.
 3. **The openHAB integration** — Things, Channels, Items, item types, units.
 
-Only #3 is openHAB-specific. This project keeps #1 and #2 verbatim and replaces
-#3 with a generic REST/OpenAPI surface.
+Only #3 is openHAB-specific. This project keeps #1 and #2 and replaces #3 with a
+generic REST/OpenAPI surface. A handful of bugs found while porting are fixed
+along the way — see [Deviations from the binding](#deviations-from-the-binding)
+for the complete list.
 
 ## How the binding works (analysis)
 
@@ -62,8 +64,10 @@ are checksummed (sum of all bytes except the checksum slot and footer, low
 byte). Writes are the same, with the get byte `0x00` replaced by `0x80` and the
 new value composed back into a previously-read frame.
 
-All of this lives, unchanged in behaviour, in
-[`stiebel_heatpump/protocol/`](stiebel_heatpump/protocol). The parser is
+All of this lives in
+[`stiebel_heatpump/protocol/`](stiebel_heatpump/protocol), behaviour-compatible
+except for the fixes listed under
+[Deviations from the binding](#deviations-from-the-binding). The parser is
 verified against the **exact byte vectors** from the binding's own Java tests
 (see [`tests/test_parser.py`](tests/test_parser.py) and
 [`tests/test_communication.py`](tests/test_communication.py)).
@@ -235,9 +239,19 @@ adapter:
 Plug the adapter into the host; on Linux it appears as `/dev/ttyUSB0`
 (run `dmesg | tail` right after plugging in to confirm the name).
 
-The **303 / 403** run at **9600 baud**; the newer **404 / 504** generation at
-**57600** (some units at **115200**). Start at `57600` for a 504 — if reads time
-out or come back as garbage, try `115200` (or `9600`). It must match your unit.
+The baud rate depends on the firmware. These are the defaults the binding ships
+in its own thing types (`OH-INF/thing/thing-types_*.xml`) — use the row that
+matches the `device_config` you picked:
+
+| Device definition | Baud rate |
+|-------------------|-----------|
+| `LWZ_THZ303_2_06`, `LWZ_THZ303_2_36`, `LWZ_THZ303_4_19` | `9600` |
+| `LWZ_THZ303_5_09`, `LWZ_THZ303_5_39`, `LWZ_THZ303_7_39` | `115200` |
+| `LWZ_THZ504_7_59`, `Tecalor_THZ55_7_62` | `115200` |
+
+Note that `baud_rate` defaults to `9600` (the value for the older 2.x/4.x
+firmware), so for a 504 you have to set it explicitly. If reads time out or come
+back as garbage, the baud rate is the first thing to check.
 
 ### 3. Point the service at it
 
@@ -246,7 +260,7 @@ out or come back as garbage, try `115200` (or `9600`). It must match your unit.
 device_config: device_configs/LWZ_THZ504_7_59.xml   # match your 7.59 firmware
 transport: serial
 port: /dev/ttyUSB0
-baud_rate: 57600           # 9600 for 303/403; try 115200 if 57600 fails
+baud_rate: 115200          # per the table above — 9600 for 2.x/4.19 firmware
 waiting_time_ms: 1200      # the 504 CPU is slow — leave slack between requests
 ```
 
@@ -275,9 +289,34 @@ correct and every channel in the definition is reachable over HTTP.
 | `GET /channels` | list all channels (filter by `data_type`, `writable`) |
 | `GET /channels/{channel_id}` | read one value |
 | `PUT /channels/{channel_id}` | write a settings value (`{"value": …}`) |
-| `GET /values?ids=a,b` | read several channels at once |
+| `GET /values?ids=a,b` | read several channels at once (404 if any id is unknown) |
 | `GET /values?data_type=Sensor` | read all sensor (or status/settings) values |
+| `GET /values` | read all Sensor **and** Status values (the default) |
 | `POST /actions/set-time` | sync the heat pump clock to system time |
+
+### Status codes
+
+Failures are deliberately distinguishable — a caller can tell a typo from a
+dead serial link from a device that refused a setting:
+
+| Code | Meaning |
+|------|---------|
+| `400` | the value is not valid for that channel (wrong type, or outside `min`..`max`) |
+| `404` | unknown channel id |
+| `409` | the channel exists but is not writable (only `Settings` channels are) |
+| `502` | the write reached the device and the device refused it — **the value on the device is unchanged** |
+| `503` | the heat pump could not be reached at all (no response, bad framing, retries exhausted) |
+
+A `200` on `PUT` therefore means the device acknowledged the write; the
+response body carries the value read back out of the confirmed frame.
+
+> **One serial link, one conversation at a time.** Every request is serialised
+> behind a single lock, and each round trip costs `waiting_time_ms` (1200 ms by
+> default). Reading a whole category is correspondingly slow — `GET
+> /values?data_type=Settings` is 29 round trips ≈ 35 s on a THZ 504 — and holds
+> the lock for the duration. Prefer one `GET /values?ids=…` over many
+> single-channel requests, and keep poll intervals well above the time a full
+> sweep takes.
 
 The published **OpenAPI depends on the loaded config**: the `{channel_id}` path
 parameter is an `enum` of your device's channels, a `HeatPumpValues` schema
@@ -337,19 +376,53 @@ the binding is based on.
 
 ```bash
 source .venv/bin/activate
+pip install -e '.[dev]'
 pytest
+ruff check .
 ```
 
 The suite covers the protocol parser and full read/write/time flows against the
-binding's original byte vectors, the config loader, the simulator, and the REST
-API (including the dynamically generated OpenAPI).
+binding's original byte vectors, the config loader, the simulator, the REST API
+(including the dynamically generated OpenAPI), the error/status-code mapping in
+[`tests/test_error_handling.py`](tests/test_error_handling.py), and a guard that
+`device_configs/` has not drifted from the binding's own XML files.
+
+Both run in CI on every change under `stiebel-eltron-rest/`, on Python 3.10 and
+3.12 — see
+[`.github/workflows/stiebel-eltron-rest.yml`](../.github/workflows/stiebel-eltron-rest.yml).
 
 ## Relationship to the binding
 
 This is an alternative, platform-neutral front end for the **same** protocol and
-device definitions. It does not modify or depend on the openHAB bundle; the XML
-files under `device_configs/` are copies of the binding's resources so the two
-stay easy to keep in sync.
+device definitions. It does not depend on the openHAB bundle at runtime; the XML
+files under `device_configs/` are copies of the binding's resources
+(`src/main/resources/HeatpumpConfig/`), and
+`tests/test_config_loader.py::test_device_config_matches_binding_resource`
+fails if they drift apart beyond the clock registers listed below.
+
+### Deviations from the binding
+
+The protocol layer is a faithful port, and the byte-level behaviour is pinned by
+the binding's own captured test vectors. The list below is the complete set of
+places where behaviour intentionally differs — each is a bug in the binding, and
+each is marked with a `Deviation:` note at the code that implements it.
+
+| Area | Binding | Here |
+|------|---------|------|
+| Composed SET frames | `composeRecord` computes `addDuplicatedBytes` and **discards the result**, so a payload byte `0x10`/`0x2B` corrupts the frame on the wire | the frame is escaped before sending, like the read path and FHEM's `THZ_encodecommand` |
+| Setting the clock | writes the whole `FC` register, which is read-only — `set-time` never worked | writes the individual `0A0122`..`0A0126` registers (firmware 4.39/5.39/7.x, as FHEM does); older 2.x definitions keep the `FC` path |
+| `weekday` range | `min=1 max=7`, but `setTime` computes `dayOfWeek-1` (0..6), so Monday was always rejected | `min=0 max=6` (also corrected in the binding's own XML files) |
+| De-escaping (`fixDuplicatedBytes`) | `findReplace` restarts at index 0 after each substitution, so `10 10 10 10` collapses to one `0x10` instead of two | a single left-to-right pass — the exact inverse of the escape |
+| End-of-frame detection | an escaped payload `0x10 0x03` arrives as `10 10 03` and is mistaken for the footer, truncating the frame | the footer is the one preceded by an *odd* run of `0x10` |
+| Two-command values | the combined `value2 * 1000 + value1` is cast back to `short`, so counters above 32767 wrap negative | the combined value is kept intact |
+| Scaled writes | `(short)(value / scale)` truncates: 21.7 °C was written as 21.6 °C | rounds half up, matching the `Math.round` the read path already uses |
+| Failed reads/writes | collapse to an empty map, which the caller cannot distinguish from "no such data" | raise, so the API can answer 502/503 instead of a misleading 200/404 |
+| Receive buffers | fixed 1024-byte buffers grow unchecked and throw `IndexOutOfBounds` on a noisy line | raise a clean, retryable error when the buffer is exhausted |
+
+Not fixed here, for the record: only `Settings` channels are writable (same as
+the binding), and time-quarter `Start`/`End` pairs are written one register at a
+time rather than as a pair, so a REST caller can leave a slot half-set — the
+binding's `handleTimeQuaterCommand` always writes both.
 
 ## License
 

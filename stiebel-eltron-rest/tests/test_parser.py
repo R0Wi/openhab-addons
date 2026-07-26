@@ -102,3 +102,39 @@ def test_compose_record_time_quarter(thz504_config):
     compose_record(45, frame, start)   # 45 -> 0x2D
     compose_record(68, frame, end)     # 68 -> 0x44
     assert parser.bytes_to_hex(frame) == "0180240A17112D441003"
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        bytes([0x10, 0x10]),  # two literal escape bytes in a row
+        bytes([0x10, 0x03]),  # looks like a footer once escaped
+        bytes([0x2B, 0x10, 0x03]),
+        bytes([0x10]),
+    ],
+)
+def test_escaping_roundtrip_for_tricky_payloads(payload):
+    """The binding's `findReplace` re-scans from index 0 after every
+    substitution, so `10 10 10 10` collapses to a single `0x10` there. A
+    de-escape must be the exact inverse of the escape."""
+    frame = bytes([0x01, 0x00, 0x00]) + payload + parser.FOOTER
+    escaped = parser.add_duplicated_bytes(frame)
+    assert parser.fix_duplicated_bytes(escaped) == frame
+
+
+@pytest.mark.parametrize(
+    "payload,expect_early_break",
+    [
+        (bytes([0x10, 0x03]), False),  # escaped payload, NOT the footer
+        (bytes([0x2B]), False),
+        (b"", True),
+    ],
+)
+def test_is_frame_end_only_matches_the_real_footer(payload, expect_early_break):
+    frame = bytes([0x01, 0x00, 0x00]) + payload + parser.FOOTER
+    escaped = parser.add_duplicated_bytes(frame)
+    # the real footer, at the very end, is always recognised
+    assert parser.is_frame_end(escaped)
+    # ... and no earlier prefix of the frame is mistaken for it
+    early = [i for i in range(4, len(escaped)) if parser.is_frame_end(escaped, i)]
+    assert early == [], f"frame would be truncated at {early}"

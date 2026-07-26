@@ -10,10 +10,9 @@ from stiebel_heatpump.protocol import parser
 from stiebel_heatpump.protocol.communication import CommunicationService
 from stiebel_heatpump.protocol.connector import Connector
 from stiebel_heatpump.protocol.parser import hex_to_bytes
-from stiebel_heatpump.protocol.transport import NoDataAvailable
+from stiebel_heatpump.protocol.transport import NoDataAvailable, SimulatorTransport
 from stiebel_heatpump.service import HeatPumpService
 from stiebel_heatpump.simulator import HeatPumpSimulator
-from stiebel_heatpump.protocol.transport import SimulatorTransport
 
 
 class ScriptedTransport:
@@ -78,15 +77,22 @@ def test_set_cooling_writes_expected_bytes(thz504_config):
         ("01048F0B1003", "UNKNOWN Register REQUEST"),
     ],
 )
-def test_set_cooling_failure(thz504_config, set_failed_response, snippet, caplog):
+def test_set_cooling_failure(thz504_config, set_failed_response, snippet):
+    """A SET the device refuses must be reported as a failure, not as a
+    success carrying the old value (which is what the binding does)."""
     current = hex_to_bytes("0100960B028700001003")
     rx = ESC + DATA + current + ESC + DATA + hex_to_bytes(set_failed_response)
     service, _ = make_service(rx)
 
     record = thz504_config.channel("p99CoolingHC1Switch")
-    result = service.write_data(True, record)
-    # failed set -> value reflects the (unchanged) machine state = off
-    assert result == {"p99CoolingHC1Switch": False}
+    with pytest.raises(parser.WriteNotConfirmed) as excinfo:
+        service.write_data(True, record)
+
+    message = str(excinfo.value)
+    # the device's own reason is surfaced ...
+    assert snippet in message
+    # ... along with the value the device kept (unchanged machine state = off)
+    assert "'p99CoolingHC1Switch': False" in message
 
 
 def test_set_time_quarter_pair_writes_expected_bytes(thz504_config):
@@ -188,3 +194,18 @@ def test_write_escapes_payload_bytes(thz504_config, minute):
     service = _sim_service(thz504_config)
     service.write_channel("pClockMinutes", minute)
     assert service.read_channel("pClockMinutes").value == minute
+
+
+def test_receive_data_not_truncated_by_escaped_payload():
+    """A payload byte 0x10 followed by 0x03 is escaped to `10 10 03` on the
+    wire; its last two bytes look exactly like the `10 03` footer. The binding
+    breaks out of its receive loop there and truncates the frame."""
+    frame = bytearray([0x01, 0x00, 0x00, 0x0B, 0x10, 0x03, 0x7F]) + parser.FOOTER
+    frame[2] = parser.calculate_checksum(frame)
+    on_the_wire = parser.add_duplicated_bytes(bytes(frame))
+
+    connector = Connector(ScriptedTransport(ESC + DATA + on_the_wire))
+    received = connector.get_data(b"\x01\x00\x00\x0b\x10\x03")
+
+    assert received == bytes(frame)
+    assert parser.header_check(received)

@@ -19,7 +19,10 @@ services:
       # --- Talking to a real device instead -------------------------------
       # STIEBEL_TRANSPORT: serial
       # STIEBEL_PORT: /dev/ttyUSB0
-      # STIEBEL_BAUD_RATE: "9600"
+      # Must match the firmware: 9600 for the 2.06/2.36/4.19 definitions,
+      # 115200 for 5.09/5.39/7.39/7.59/7.62. The default is 9600, so the
+      # THZ504 7.59 config selected above needs it set explicitly.
+      # STIEBEL_BAUD_RATE: "115200"
       # STIEBEL_WAITING_TIME_MS: "1200"
     # Uncomment to pass a real USB-serial device through to the container
     # (Linux hosts only; on Docker Desktop for Mac/Windows use usbipd or a
