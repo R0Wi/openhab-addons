@@ -50,6 +50,18 @@ public class OAuthMetadataServlet extends HttpServlet {
     public static final String PATH_AUTH_SERVER = MCP_LOCAL_PATH + "/.well-known/oauth-authorization-server";
     /** OIDC-flavoured alias of the AS metadata — same doc, different URL. */
     public static final String PATH_AUTH_SERVER_OIDC = MCP_LOCAL_PATH + "/.well-known/openid-configuration";
+    /**
+     * RFC 8414 section 3.1 requires the well-known suffix to be inserted between the host and path
+     * components of the issuer identifier (here {@code https://host/mcp}), i.e. served at
+     * {@code /.well-known/oauth-authorization-server/mcp} — NOT appended after the issuer path as
+     * {@link #PATH_AUTH_SERVER} does. Spec-compliant clients construct this URL themselves from the
+     * issuer and never see {@link #PATH_AUTH_SERVER}, so both must be served.
+     */
+    public static final String PATH_AUTH_SERVER_ROOT = "/.well-known/oauth-authorization-server" + MCP_LOCAL_PATH;
+    public static final String PATH_AUTH_SERVER_OIDC_ROOT = "/.well-known/openid-configuration" + MCP_LOCAL_PATH;
+    /** Same insertion rule applies to RFC 9728 protected resource metadata. */
+    public static final String PATH_PROTECTED_RESOURCE_ROOT = "/.well-known/oauth-protected-resource"
+            + MCP_LOCAL_PATH;
 
     private final Logger logger = LoggerFactory.getLogger(OAuthMetadataServlet.class);
     private final ObjectMapper jackson = McpToolUtils.jackson();
@@ -65,9 +77,10 @@ public class OAuthMetadataServlet extends HttpServlet {
         UrlContext ctx = resolveUrlContext(request);
 
         Map<String, Object> body;
-        if (PATH_PROTECTED_RESOURCE.equals(path)) {
+        if (PATH_PROTECTED_RESOURCE.equals(path) || PATH_PROTECTED_RESOURCE_ROOT.equals(path)) {
             body = protectedResourceMetadata(ctx);
-        } else if (PATH_AUTH_SERVER.equals(path) || PATH_AUTH_SERVER_OIDC.equals(path)) {
+        } else if (PATH_AUTH_SERVER.equals(path) || PATH_AUTH_SERVER_OIDC.equals(path)
+                || PATH_AUTH_SERVER_ROOT.equals(path) || PATH_AUTH_SERVER_OIDC_ROOT.equals(path)) {
             body = authorizationServerMetadata(ctx);
             if (ctx.authorizationEndpoint == null) {
                 logger.debug("OAuth AS metadata served with null authorization_endpoint — "

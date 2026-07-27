@@ -300,6 +300,15 @@ public class McpService {
                     .add(registerServlet(metadataServlet, OAuthMetadataServlet.PATH_AUTH_SERVER, "mcp-oauth-asmd"));
             serviceRegistrations.add(registerServlet(metadataServlet, OAuthMetadataServlet.PATH_AUTH_SERVER_OIDC,
                     "mcp-oauth-asmd-oidc"));
+            // RFC 8414/9728-compliant locations (well-known suffix inserted before the resource path,
+            // not appended after it) — the ones spec-compliant clients actually construct from the
+            // issuer/resource identifier. See OAuthMetadataServlet for details.
+            serviceRegistrations.add(registerServlet(metadataServlet, OAuthMetadataServlet.PATH_PROTECTED_RESOURCE_ROOT,
+                    "mcp-oauth-prm-root"));
+            serviceRegistrations.add(registerServlet(metadataServlet, OAuthMetadataServlet.PATH_AUTH_SERVER_ROOT,
+                    "mcp-oauth-asmd-root"));
+            serviceRegistrations.add(registerServlet(metadataServlet, OAuthMetadataServlet.PATH_AUTH_SERVER_OIDC_ROOT,
+                    "mcp-oauth-asmd-oidc-root"));
 
             OAuthTokenProxyServlet tokenProxy = new OAuthTokenProxyServlet(httpClient, localBaseUrl);
             serviceRegistrations.add(registerServlet(tokenProxy, OAuthTokenProxyServlet.PATH, "mcp-oauth-token-proxy"));
