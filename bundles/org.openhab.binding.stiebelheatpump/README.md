@@ -4,16 +4,15 @@ This binding is used to communicate Stiebel Eltron LWZ heat pumps via a serial i
 
 The following functionality has been implemented:
 
-* reading all settings, status, time, and sensor data from the heat pump
-* protocol parse for different versions of LWZ is configurable via xml file.  Other versions like 2.16, 4.09, 4.19, 4.38, 5.39 should be easy to extend as parser configuration can be derived from [protocol versions](http://bazaar.launchpad.net/~robert-penz-name/heatpumpmonitor/trunk/files/head:/protocolVersions/).
-* changing settings of number setting parameter in the heat pump, all seeting parameters are configured as advanced channels
-* updating the time in the heat pump
-
+- reading all settings, status, time, and sensor data from the heat pump
+- protocol parse for different versions of LWZ is configurable via xml file.  Other versions like 2.16, 4.09, 4.19, 4.38, 5.39 should be easy to extend as parser configuration can be derived from [protocol versions](http://bazaar.launchpad.net/~robert-penz-name/heatpumpmonitor/trunk/files/head:/protocolVersions/).
+- changing settings of number setting parameter in the heat pump, all seeting parameters are configured as advanced channels
+- updating the time in the heat pump
 
 The binding has been successfully tested with these hardware configurations:
 
-* [Stiebel Eltron LWZ 303](https://www.stiebel-eltron.de/content/dam/ste/de/de/products/downloads/erneuerbare_energien/lueftung/Bedienungs-_u._Installationsanleitungen__LWZ_303-403__DM0000017729-ome.pdf) connected with [Mate-N-Lok RS232](http://robert.penz.name/heat-pump-lwz/)
-Many other varaints of the heat pump should also work: 
+- [Stiebel Eltron LWZ 303](https://www.stiebel-eltron.de/content/dam/ste/de/de/products/downloads/erneuerbare_energien/lueftung/Bedienungs-_u._Installationsanleitungen__LWZ_303-403__DM0000017729-ome.pdf) connected with [Mate-N-Lok RS232](http://robert.penz.name/heat-pump-lwz/)
+Many other variants of the heat pump should also work:
     Stiebel Eltron LWZ 303
     Stiebel Eltron LWZ 403
     Stiebel Eltron LWZ 303 SOL
